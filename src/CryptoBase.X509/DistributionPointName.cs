@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace CryptoBase.X509;
@@ -125,7 +126,7 @@ public closed class DistributionPointName
 		internal FullName(GeneralName[] names)
 		{
 			Names = names;
-			Uris = Array.AsReadOnly(GetUris(names));
+			Uris = ImmutableCollectionsMarshal.AsImmutableArray(GetUris(names));
 		}
 
 		/// <inheritdoc />

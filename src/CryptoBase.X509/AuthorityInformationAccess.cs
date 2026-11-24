@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Text;
 
 namespace CryptoBase.X509;
@@ -39,8 +40,8 @@ public sealed class AuthorityInformationAccess
 			}
 		}
 
-		OcspUris = ocsp.AsReadOnly();
-		CAIssuersUris = caIssuers.AsReadOnly();
+		OcspUris = ocsp.ToImmutableArray();
+		CAIssuersUris = caIssuers.ToImmutableArray();
 	}
 
 	/// <summary>

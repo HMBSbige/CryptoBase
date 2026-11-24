@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -545,7 +546,7 @@ public sealed class CertificateRevocationList
 				}
 			}
 
-			extensions = list.AsReadOnly();
+			extensions = list.ToImmutableArray();
 		}
 
 		return new RevokedCertificate(serialNumber, revocationDate, reasonCode, invalidityDate, extensions);

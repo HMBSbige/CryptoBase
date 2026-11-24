@@ -17,13 +17,11 @@ public enum CertificateSignatureStrength
 
 	/// <summary>
 	/// An algorithm with SHA-1 or SHA-224, or DSA.
-	/// RSASSA-PSS without parameters, whose hashes default to SHA-1, is one of them.
 	/// </summary>
 	Weak = 2,
 
 	/// <summary>
-	/// An algorithm with MD2, MD4, MD5 or SHA-0, or RSASSA-PSS or ecdsa-with-Specified whose parameters do not decode.
-	/// So is ecdsa-with-Specified without parameters.
+	/// An algorithm with MD2, MD4, MD5 or SHA-0, or RSASSA-PSS or ecdsa-with-Specified whose parameters are absent or do not decode.
 	/// </summary>
 	Forbidden = 3
 }

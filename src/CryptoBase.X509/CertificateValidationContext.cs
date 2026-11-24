@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace CryptoBase.X509;
 
 /// <summary>
@@ -29,7 +31,7 @@ public sealed class CertificateValidationContext
 			throw new ArgumentOutOfRangeException(nameof(usage), usage, "The usage is not defined.");
 		}
 
-		PresentedCertificates = Array.AsReadOnly(copy);
+		PresentedCertificates = ImmutableCollectionsMarshal.AsImmutableArray(copy);
 		Usage = usage;
 	}
 

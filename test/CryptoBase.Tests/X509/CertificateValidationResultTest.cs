@@ -32,6 +32,7 @@ public class CertificateValidationResultTest
 			await Assert.That(result.IsValid).IsFalse();
 			await Assert.That(result.Error).IsEqualTo(CertificateValidationError.Unspecified);
 			await Assert.That(result.Errors).IsEquivalentTo([CertificateValidationError.Unspecified], CollectionOrdering.Matching);
+			await Assert.That(KeepsItsStore(result.Errors)).IsTrue();
 			await Assert.That(result.Path).IsNotNull().And.IsEmpty();
 			await Assert.That(result.PathEnd).IsEqualTo(CertificatePathEnd.None);
 			await Assert.That(result.Message).IsNull();
@@ -158,8 +159,8 @@ public class CertificateValidationResultTest
 		{
 			await Assert.That(result.Errors).IsEquivalentTo([CertificateValidationError.Revoked], CollectionOrdering.Matching);
 			await Assert.That(result.Path[0]).IsSameReferenceAs(first);
-			await Assert.That(result.Errors is ICollection<CertificateValidationError> { IsReadOnly: true }).IsTrue();
-			await Assert.That(result.Path is ICollection<Certificate> { IsReadOnly: true }).IsTrue();
+			await Assert.That(KeepsItsStore(result.Errors)).IsTrue();
+			await Assert.That(KeepsItsStore(result.Path)).IsTrue();
 		}
 	}
 

@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace CryptoBase.X509;
 
 /// <summary>
@@ -33,13 +35,13 @@ public sealed class ExtendedKeyUsage
 	/// </summary>
 	public const string OcspSigning = "1.3.6.1.5.5.7.3.9";
 
-	// The array that Purposes wraps, which Contains searches without allocating an enumerator.
-	private readonly string[] _purposes;
+	// What Purposes boxes, which Contains searches without allocating an enumerator.
+	private readonly ImmutableArray<string> _purposes;
 
-	private ExtendedKeyUsage(string[] purposes)
+	private ExtendedKeyUsage(ImmutableArray<string> purposes)
 	{
 		_purposes = purposes;
-		Purposes = Array.AsReadOnly(purposes);
+		Purposes = purposes;
 	}
 
 	/// <summary>

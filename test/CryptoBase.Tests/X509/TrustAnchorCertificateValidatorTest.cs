@@ -1290,6 +1290,7 @@ public class TrustAnchorCertificateValidatorTest
 		{
 			await Assert.That(string.Join(',', strict.TrustAnchorSubjects.Select(static subject => Convert.ToHexString(subject.Span)))).IsEqualTo(Convert.ToHexString(usable.Name));
 			await Assert.That(string.Join(',', lenient.TrustAnchorSubjects.Select(static subject => Convert.ToHexString(subject.Span)))).IsEqualTo(string.Join(',', Convert.ToHexString(unimported.Name), Convert.ToHexString(rsaRoot.Subject.Span), Convert.ToHexString(usable.Name)));
+			await Assert.That(KeepsItsStore(lenient.TrustAnchorSubjects)).IsTrue();
 		}
 	}
 

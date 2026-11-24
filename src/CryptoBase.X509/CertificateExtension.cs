@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Globalization;
 
 namespace CryptoBase.X509;
@@ -145,7 +146,7 @@ public sealed class CertificateExtension
 			extensions.Add(extension);
 		}
 
-		return extensions.AsReadOnly();
+		return extensions.ToImmutableArray();
 	}
 
 	// SEQUENCE OF Extension, the form of the extensions of a certificate and of the value of an extensionRequest attribute.

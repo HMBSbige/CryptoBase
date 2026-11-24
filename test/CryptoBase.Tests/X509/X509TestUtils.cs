@@ -1,6 +1,7 @@
 using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures.Ecdsa;
 using CryptoBase.X509;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Formats.Asn1;
 using System.Net;
@@ -24,6 +25,23 @@ internal static class X509TestUtils
 	public const byte PrintableStringTag = 0x13;
 
 	public static readonly DateTimeOffset Now = X509Time.TruncateToSeconds(DateTimeOffset.UtcNow);
+
+	// Whether a read-only list keeps its elements from its callers: the ICollection.SyncRoot of a ReadOnlyCollection<T> is the array or list that it wraps.
+	public static bool KeepsItsStore<T>(IReadOnlyList<T> list)
+	{
+		object? store;
+
+		try
+		{
+			store = ((ICollection)list).SyncRoot;
+		}
+		catch (NotSupportedException)
+		{
+			store = null;
+		}
+
+		return list is ICollection<T> { IsReadOnly: true } && store is not IList { IsReadOnly: false, Count: > 0 };
+	}
 
 	public static readonly SignatureAlgorithm[] RsaAlgorithms =
 	[

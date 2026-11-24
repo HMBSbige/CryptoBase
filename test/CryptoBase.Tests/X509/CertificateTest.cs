@@ -355,6 +355,9 @@ public class CertificateTest
 			await Assert.That(certificate.MatchHostName("example.org")).IsEqualTo(HostNameMatch.Mismatch);
 			await Assert.That(certificate.GetBasicConstraints() is { CertificateAuthority: true, PathLengthConstraint: 2 }).IsTrue();
 			await Assert.That(certificate.GetExtendedKeyUsage()?.Purposes).IsEquivalentTo([ServerAuthenticationOid], CollectionOrdering.Matching);
+			await Assert.That(KeepsItsStore(certificate.Extensions)).IsTrue();
+			await Assert.That(KeepsItsStore(certificate.GetExtendedKeyUsage()?.Purposes ?? [])).IsTrue();
+			await Assert.That(KeepsItsStore(certificate.GetSubjectAlternativeName()?.IPAddresses ?? [])).IsTrue();
 		}
 	}
 

@@ -50,10 +50,10 @@ public static class CertificateAlgorithmPolicy
 	/// sha1WithRSAEncryption, sha224WithRSAEncryption, ecdsa-with-SHA1 and ecdsa-with-SHA224;
 	/// the OIW's sha-1WithRSAEncryption, 1.3.14.3.2.29;
 	/// dsa-with-sha1, the OIW's dsaWithSHA1 and dsaWithCommonSHA1, and NIST's DSA with SHA-2 (RFC 5758, Sec. 3.1) and SHA-3, 2.16.840.1.101.3.4.3.1 to 2.16.840.1.101.3.4.3.8;
-	/// id-RSASSA-PSS whose hash or MGF1 hash is SHA-1 or SHA-224, as they are without parameters (RFC 4055, Sec. 3.1);
+	/// id-RSASSA-PSS whose hash or MGF1 hash is SHA-1, which RSASSA-PSS-params name when they omit the hash (RFC 4055, Sec. 3.1), or SHA-224;
 	/// and ecdsa-with-Specified whose parameters name SHA-1 or SHA-224.
 	/// Parameters that do not decode are <see cref="CertificateSignatureStrength.Forbidden" />:
-	/// those of id-RSASSA-PSS that are present but are not DER-encoded RSASSA-PSS-params, with its fields in order and nothing else;
+	/// those of id-RSASSA-PSS that are absent, which a signature must not omit (RFC 4055, Sec. 3.1), or are not DER-encoded RSASSA-PSS-params, with its fields in order and nothing else;
 	/// and those of ecdsa-with-Specified that are absent or are not a DER-encoded AlgorithmIdentifier, an OBJECT IDENTIFIER and at most one value in a SEQUENCE, with nothing else.
 	/// Where more than one of these holds, as for RSASSA-PSS with MD5 and MGF1 with SHA-1, the most severe one stands.
 	/// Any other algorithm is <see cref="CertificateSignatureStrength.Unsupported" />, RSASSA-PSS with SHA-256 but another saltLength and ecdsa-with-Specified with SHA-256 among them.
@@ -93,12 +93,13 @@ public static class CertificateAlgorithmPolicy
 	}
 
 	/// <summary>
-	/// Determines whether verifying with a key takes bounded work: whether an RSA key is valid, with a modulus and a public exponent that are not too long.
+	/// Determines whether verifying with a key takes bounded work: whether an RSA key decodes, with an odd modulus and public exponent that are not too long.
 	/// </summary>
 	/// <remarks>
 	/// A key whose algorithm is rsaEncryption or id-RSASSA-PSS, whatever its parameters, must be a DER-encoded RSAPublicKey (RFC 8017, Appendix A.1.1) whose integers are positive;
-	/// its modulus must be odd and have at most 16384 bits, and its public exponent must be odd, other than 1, and have at most 33 bits.
+	/// its modulus must be odd and have at most 16384 bits, and its public exponent must be odd, other than 1, below the modulus, and have at most 33 bits.
 	/// Those are the bounds of <see cref="PlatformRsaKey" />; <see cref="IsAcceptableInPath" /> also requires them.
+	/// Whether the modulus is a product of two primes is not checked.
 	/// The verification of any other key takes work that its algorithm bounds, so the method returns <see langword="true" /> for it.
 	/// </remarks>
 	/// <param name="key">The key, such as <see cref="Certificate.PublicKeyInfo" />.</param>
@@ -205,6 +206,12 @@ public static class CertificateAlgorithmPolicy
 		return integer is not ([>= 0x80, ..] or [0x00]);
 	}
 
+	// Whether a positive DER INTEGER, by its contents, is below another: DER writes each in the fewest bytes, so the longer one is greater.
+	private static bool IsBelow(ReadOnlySpan<byte> integer, ReadOnlySpan<byte> other)
+	{
+		return integer.Length < other.Length || integer.Length == other.Length && integer.SequenceCompareTo(other) < 0;
+	}
+
 	// The bit length of a positive DER INTEGER, by its contents, to which DER prefixes a zero byte when the high bit is set.
 	// A length beyond int.MaxValue, of an integer of more than 256 MiB, is int.MaxValue, which every bound refuses.
 	internal static int GetBitLength(ReadOnlySpan<byte> integer)
@@ -237,8 +244,8 @@ public static class CertificateAlgorithmPolicy
 		return null;
 	}
 
-	// The RSAPublicKey of a key whose algorithm is RSA, with the bit lengths of its modulus and public exponent: null if it is valid, and Malformed, with its description in reason, if not.
-	// An odd modulus and an odd exponent of at least 3 (RFC 8017, Sec. 3.1), both positive, make a valid key.
+	// The RSAPublicKey of a key whose algorithm is RSA, with the bit lengths of its modulus and public exponent: null if it passes the checks of RFC 8017, Sec. 3.1, that need no factoring, and Malformed, with its description in reason, if not.
+	// Those are an odd modulus and an odd exponent from 3 to below the modulus, both positive.
 	private static CertificateValidationError? ReadRsaPublicKey(SubjectPublicKeyInfo info, out int modulusBits, out int exponentBits, out string? reason)
 	{
 		ReadOnlySpan<byte> modulus;
@@ -255,7 +262,7 @@ public static class CertificateAlgorithmPolicy
 			return CertificateValidationError.Malformed;
 		}
 
-		if (!IsPositive(modulus) || !IsPositive(exponent) || (modulus[^1] & 1) is 0 || (exponent[^1] & 1) is 0 || exponent is [1])
+		if (!IsPositive(modulus) || !IsPositive(exponent) || (modulus[^1] & 1) is 0 || (exponent[^1] & 1) is 0 || exponent is [1] || !IsBelow(exponent, modulus))
 		{
 			reason = "has an RSA key whose modulus or public exponent is invalid";
 			return CertificateValidationError.Malformed;
@@ -267,7 +274,7 @@ public static class CertificateAlgorithmPolicy
 	}
 
 	// The strength of RSASSA-PSS-params (RFC 4055, Sec. 3.1), whose hash and MGF1 hash default to SHA-1: the most severe of the two hashes.
-	// Absent parameters mean SHA-1 for both, which is Weak.
+	// Absent parameters, which a signature must have, are Forbidden like those that do not decode.
 	// Present parameters that are not RSASSA-PSS-params, with each field in order under its tag and nothing else, are Forbidden, as a reader that is less strict could find MD5 in them.
 	// The values of saltLength and trailerField are not checked here: with parameters that matched no SignatureAlgorithm, they leave the algorithm Unsupported.
 	// A mask generation function other than MGF1 names no hash.
@@ -275,7 +282,7 @@ public static class CertificateAlgorithmPolicy
 	{
 		if (parameters.IsEmpty)
 		{
-			return CertificateSignatureStrength.Weak;
+			return CertificateSignatureStrength.Forbidden;
 		}
 
 		try

@@ -1,3 +1,6 @@
+using System.Collections.Immutable;
+using System.Runtime.InteropServices;
+
 namespace CryptoBase.X509;
 
 /// <summary>
@@ -300,7 +303,7 @@ public sealed class TrustAnchorCertificateValidator : ICertificateValidator, IDi
 				contents.Add(encoded.AsMemory(offset, length));
 			}
 
-			field = policies;
+			field = ImmutableCollectionsMarshal.AsImmutableArray(policies);
 			InitialPolicySet = contents.Contains(PolicyGraph.AnyPolicy) ? null : contents;
 		}
 	} = [AnyPolicyOid];
@@ -405,7 +408,7 @@ public sealed class TrustAnchorCertificateValidator : ICertificateValidator, IDi
 				throw new ArgumentException("The revocation lists must not include null.", nameof(value));
 			}
 
-			field = lists;
+			field = ImmutableCollectionsMarshal.AsImmutableArray(lists);
 			_revocationListsByIssuer = lists.Length is 0 ? null : GroupByName(lists, static list => list.Issuer);
 		}
 	} = [];
@@ -462,7 +465,7 @@ public sealed class TrustAnchorCertificateValidator : ICertificateValidator, IDi
 				}
 			}
 
-			IReadOnlyList<ReadOnlyMemory<byte>> created = Array.AsReadOnly(names.ToArray());
+			IReadOnlyList<ReadOnlyMemory<byte>> created = names.ToImmutableArray();
 			return Interlocked.CompareExchange(ref field, created, null) ?? created;
 		}
 	}

@@ -1,6 +1,7 @@
-using System.Collections.ObjectModel;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace CryptoBase.X509;
 
@@ -39,16 +40,15 @@ public readonly struct CertificateValidationResult : IEquatable<CertificateValid
 		CertificateValidationError.NameMismatch,
 	];
 
-	private static readonly ReadOnlyCollection<CertificateValidationError> DefaultErrors = new([CertificateValidationError.Unspecified]);
+	private static readonly IReadOnlyList<CertificateValidationError> DefaultErrors = ImmutableArray.Create(CertificateValidationError.Unspecified);
 
 	// Null only in the default value.
-	private readonly ReadOnlyCollection<CertificateValidationError>? _errors;
-	private readonly ReadOnlyCollection<Certificate>? _path;
+	private readonly IReadOnlyList<CertificateValidationError>? _errors;
 
-	private CertificateValidationResult(ReadOnlyCollection<CertificateValidationError> errors, ReadOnlyCollection<Certificate> path, CertificatePathEnd pathEnd, string? message)
+	private CertificateValidationResult(IReadOnlyList<CertificateValidationError> errors, IReadOnlyList<Certificate> path, CertificatePathEnd pathEnd, string? message)
 	{
 		_errors = errors;
-		_path = path;
+		Path = path;
 		PathEnd = pathEnd;
 		Message = message;
 	}
@@ -56,7 +56,7 @@ public readonly struct CertificateValidationResult : IEquatable<CertificateValid
 	/// <summary>
 	/// Gets a result that accepts the certificates, with no path.
 	/// </summary>
-	public static CertificateValidationResult Valid => new(ReadOnlyCollection<CertificateValidationError>.Empty, ReadOnlyCollection<Certificate>.Empty, CertificatePathEnd.None, null);
+	public static CertificateValidationResult Valid => new([], [], CertificatePathEnd.None, null);
 
 	/// <summary>
 	/// Gets a value that indicates whether the certificates are acceptable, which is when <see cref="Errors" /> is empty.
@@ -87,7 +87,7 @@ public readonly struct CertificateValidationResult : IEquatable<CertificateValid
 	/// empty if the validator reports no path.
 	/// </summary>
 	/// <remarks>A result that accepts the certificates may have a path that <see cref="PathEnd" /> reports as not ending at a trust anchor, when the validator's policy allows such a path.</remarks>
-	public IReadOnlyList<Certificate> Path => _path ?? ReadOnlyCollection<Certificate>.Empty;
+	public IReadOnlyList<Certificate> Path => field ?? [];
 
 	/// <summary>
 	/// Gets where <see cref="Path" /> ends: <see cref="CertificatePathEnd.None" /> exactly when it is empty.
@@ -102,7 +102,7 @@ public readonly struct CertificateValidationResult : IEquatable<CertificateValid
 	/// <returns>The result, whose <see cref="Errors" /> holds <paramref name="error" /> alone.</returns>
 	public static CertificateValidationResult Invalid(CertificateValidationError error, string? message = null)
 	{
-		return new CertificateValidationResult(new ReadOnlyCollection<CertificateValidationError>([error]), ReadOnlyCollection<Certificate>.Empty, CertificatePathEnd.None, message);
+		return new CertificateValidationResult(ImmutableArray.Create(error), [], CertificatePathEnd.None, message);
 	}
 
 	/// <summary>
@@ -137,7 +137,7 @@ public readonly struct CertificateValidationResult : IEquatable<CertificateValid
 			present |= 1 << rank;
 		}
 
-		ReadOnlyCollection<CertificateValidationError> ordered = ReadOnlyCollection<CertificateValidationError>.Empty;
+		IReadOnlyList<CertificateValidationError> ordered = [];
 
 		if (present is not 0)
 		{
@@ -152,7 +152,7 @@ public readonly struct CertificateValidationResult : IEquatable<CertificateValid
 				}
 			}
 
-			ordered = Array.AsReadOnly(distinct);
+			ordered = ImmutableCollectionsMarshal.AsImmutableArray(distinct);
 		}
 
 		Certificate[] copy = [.. path];
@@ -174,7 +174,7 @@ public readonly struct CertificateValidationResult : IEquatable<CertificateValid
 			throw new ArgumentException("The path must be empty exactly when its end is None.", nameof(pathEnd));
 		}
 
-		return new CertificateValidationResult(ordered, empty ? ReadOnlyCollection<Certificate>.Empty : Array.AsReadOnly(copy), pathEnd, message);
+		return new CertificateValidationResult(ordered, empty ? [] : ImmutableCollectionsMarshal.AsImmutableArray(copy), pathEnd, message);
 	}
 
 	/// <summary>

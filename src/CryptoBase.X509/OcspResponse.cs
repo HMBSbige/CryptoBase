@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace CryptoBase.X509;
 
 /// <summary>
@@ -119,7 +121,7 @@ public closed class OcspResponse
 			}
 		}
 
-		return certificates.AsReadOnly();
+		return certificates.ToImmutableArray();
 	}
 
 	// Nonce ::= OCTET STRING(SIZE(1..128)) (RFC 9654, Sec. 2.1), or null if it has another form.
@@ -215,7 +217,7 @@ public closed class OcspResponse
 				list.Add(OcspSingleResponse.Read(ref responses));
 			}
 
-			Responses = list.AsReadOnly();
+			Responses = list.ToImmutableArray();
 			Extensions = data.PeekTagIs(ResponseExtensionsTag) ? CertificateExtension.ReadList(ref data, ResponseExtensionsTag) : [];
 			Nonce = ReadNonce(Extensions);
 			data.ThrowIfNotEmpty();

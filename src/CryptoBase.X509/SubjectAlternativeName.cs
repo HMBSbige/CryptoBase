@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Text;
 
 namespace CryptoBase.X509;
@@ -17,7 +18,7 @@ namespace CryptoBase.X509;
 /// </remarks>
 public sealed class SubjectAlternativeName
 {
-	// The list that IPAddresses wraps, which Matches enumerates without allocating.
+	// The addresses of IPAddresses, which Matches enumerates without allocating.
 	private readonly List<ReadOnlyMemory<byte>> _addresses;
 
 	private SubjectAlternativeName(GeneralName[] names)
@@ -41,9 +42,9 @@ public sealed class SubjectAlternativeName
 			}
 		}
 
-		DnsNames = dnsNames.AsReadOnly();
+		DnsNames = dnsNames.ToImmutableArray();
 		_addresses = addresses;
-		IPAddresses = addresses.AsReadOnly();
+		IPAddresses = addresses.ToImmutableArray();
 		DnsNamePatterns = [.. dnsNamePatterns];
 	}
 

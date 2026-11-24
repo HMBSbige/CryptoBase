@@ -258,11 +258,11 @@ public class CertificateAlgorithmPolicyTest
 		}
 	}
 
-	// RSASSA-PSS by its hash and MGF1 hash, the most severe one standing; the hash and the MGF1 hash default to SHA-1 (RFC 4055, Sec. 3.1).
+	// RSASSA-PSS by its hash and MGF1 hash, the most severe one standing; the hash and the MGF1 hash default to SHA-1, but the parameters themselves must be present (RFC 4055, Sec. 3.1).
 	[Test]
 	[Arguments(true, Sha256Oid, Sha256Oid, 32, CertificateSignatureStrength.Acceptable)]
 	[Arguments(true, Sha512Oid, Sha512Oid, 64, CertificateSignatureStrength.Acceptable)]
-	[Arguments(false, null, null, null, CertificateSignatureStrength.Weak)]
+	[Arguments(false, null, null, null, CertificateSignatureStrength.Forbidden)]
 	[Arguments(true, null, null, null, CertificateSignatureStrength.Weak)]
 	[Arguments(true, null, Sha256Oid, 32, CertificateSignatureStrength.Weak)]
 	[Arguments(true, Sha256Oid, null, 32, CertificateSignatureStrength.Weak)]
@@ -392,6 +392,7 @@ public class CertificateAlgorithmPolicyTest
 	}
 
 	// The bounds of 16384 bits for the modulus and 33 for the public exponent, which must make a valid key (RFC 8017, Sec. 3.1), for rsaEncryption and id-RSASSA-PSS whatever their parameters.
+	// The exponent must be below the modulus, which DER may write one byte longer, with a leading zero.
 	[Test]
 	public async Task BoundsTheVerificationOfRsaKeys()
 	{
@@ -412,7 +413,11 @@ public class CertificateAlgorithmPolicyTest
 			("zero exponent", modulus, 0, false),
 			("even modulus", modulus - 1, F4, false),
 			("negative modulus", -modulus, F4, false),
-			("negative exponent", modulus, -F4, false)
+			("negative exponent", modulus, -F4, false),
+			("exponent above the modulus", 15, 17, false),
+			("exponent as large as the modulus", 143, 143, false),
+			("exponent above the modulus, both with a leading zero", 143, 145, false),
+			("exponent below the modulus, without its leading zero", 143, 127, true)
 		];
 
 		using (Assert.Multiple())

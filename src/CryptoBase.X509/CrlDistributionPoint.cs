@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace CryptoBase.X509;
 
 /// <summary>
@@ -31,7 +33,7 @@ public sealed class CrlDistributionPoint
 			}
 		}
 
-		CrlIssuerDirectoryNames = names.AsReadOnly();
+		CrlIssuerDirectoryNames = names.ToImmutableArray();
 	}
 
 	/// <summary>
@@ -55,7 +57,7 @@ public sealed class CrlDistributionPoint
 	// CRLDistributionPoints ::= SEQUENCE SIZE (1..MAX) OF DistributionPoint.
 	internal static IReadOnlyList<CrlDistributionPoint> ReadList(ReadOnlyMemory<byte> value)
 	{
-		return DerReader.ReadSoleSequenceOf(value, Read).AsReadOnly();
+		return DerReader.ReadSoleSequenceOf(value, Read).ToImmutableArray();
 	}
 
 	// ReasonFlags ::= BIT STRING { unused (0), keyCompromise (1), …, aACompromise (8) }, under tag.

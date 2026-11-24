@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+using System.Collections.Immutable;
 
 namespace CryptoBase.X509;
 
@@ -370,7 +370,7 @@ public sealed class Certificate
 	/// The first call decodes the extension, as <see cref="ExtendedKeyUsage.Decode" /> does, and later calls return the same instance.
 	/// Calls may be concurrent.
 	/// </remarks>
-	/// <returns>The value, or <see langword="null" /> if the certificate has no such extension, which allows any purpose.</returns>
+	/// <returns>The value, or <see langword="null" /> if the certificate has no such extension, which then restricts no purpose; the key usage extension still applies.</returns>
 	/// <exception cref="CryptographicException">The extension is not a DER-encoded ExtKeyUsageSyntax.</exception>
 	public ExtendedKeyUsage? GetExtendedKeyUsage()
 	{
@@ -451,7 +451,7 @@ public sealed class Certificate
 	}
 
 	// Extensions ::= SEQUENCE SIZE (1..MAX) OF Extension.
-	internal static ReadOnlyCollection<CertificateExtension> ReadExtensionSequence(ref DerReader reader)
+	internal static IReadOnlyList<CertificateExtension> ReadExtensionSequence(ref DerReader reader)
 	{
 		DerReader sequence = reader.ReadSequence();
 		sequence.ThrowIfEmpty();
@@ -464,6 +464,6 @@ public sealed class Certificate
 			extensions.Add(CertificateExtension.Read(ref sequence));
 		}
 
-		return extensions.AsReadOnly();
+		return extensions.ToImmutableArray();
 	}
 }
