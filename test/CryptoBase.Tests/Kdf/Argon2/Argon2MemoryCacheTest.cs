@@ -19,6 +19,9 @@ public class Argon2MemoryCacheTest
 			cache.Return(first, 4096);
 			nint other = cache.Rent(8192);
 			nint reused = cache.Rent(4096);
+			nuint cached = cache.CachedBytes;
+			cache.Return(other, 8192);
+			cache.Return(reused, 4096);
 
 			using (Assert.Multiple())
 			{
@@ -26,11 +29,8 @@ public class Argon2MemoryCacheTest
 				await Assert.That(other % (nint)Argon2MemoryCache.Alignment).IsEqualTo(0);
 				await Assert.That(other).IsNotEqualTo(first);
 				await Assert.That(reused).IsEqualTo(first);
-				await Assert.That(cache.CachedBytes).IsEqualTo(0u);
+				await Assert.That(cached).IsEqualTo(0u);
 			}
-
-			cache.Return(other, 8192);
-			cache.Return(reused, 4096);
 		}
 		finally
 		{
@@ -58,16 +58,16 @@ public class Argon2MemoryCacheTest
 
 			nint mostRecent = cache.Rent(4096);
 			nint older = cache.Rent(4096);
+			nuint cached = cache.CachedBytes;
+			cache.Return(mostRecent, 4096);
+			cache.Return(older, 4096);
 
 			using (Assert.Multiple())
 			{
 				await Assert.That(mostRecent).IsEqualTo(third);
 				await Assert.That(older).IsEqualTo(second);
-				await Assert.That(cache.CachedBytes).IsEqualTo(0u);
+				await Assert.That(cached).IsEqualTo(0u);
 			}
-
-			cache.Return(mostRecent, 4096);
-			cache.Return(older, 4096);
 		}
 		finally
 		{
@@ -205,18 +205,18 @@ public class Argon2MemoryCacheTest
 			cache.Return(fifth, 12288);
 
 			nint[] reused = [cache.Rent(8192), cache.Rent(4096), cache.Rent(4096), cache.Rent(12288), cache.Rent(8192)];
-
-			using (Assert.Multiple())
-			{
-				await Assert.That(reused).IsEquivalentTo([fourth, third, first, fifth, second], CollectionOrdering.Matching);
-				await Assert.That(cache.CachedBytes).IsEqualTo(0u);
-			}
-
+			nuint cached = cache.CachedBytes;
 			cache.Return(reused[0], 8192);
 			cache.Return(reused[1], 4096);
 			cache.Return(reused[2], 4096);
 			cache.Return(reused[3], 12288);
 			cache.Return(reused[4], 8192);
+
+			using (Assert.Multiple())
+			{
+				await Assert.That(reused).IsEquivalentTo([fourth, third, first, fifth, second], CollectionOrdering.Matching);
+				await Assert.That(cached).IsEqualTo(0u);
+			}
 		}
 		finally
 		{
@@ -246,20 +246,20 @@ public class Argon2MemoryCacheTest
 
 			nint reusedLarge = cache.Rent(8 * length);
 			nint[] reused = [.. Enumerable.Range(0, count - 8).Select(_ => cache.Rent(length))];
+			nuint cached = cache.CachedBytes;
+			cache.Return(reusedLarge, 8 * length);
+
+			foreach (nint region in reused)
+			{
+				cache.Return(region, length);
+			}
 
 			using (Assert.Multiple())
 			{
 				await Assert.That(afterEviction).IsEqualTo(count * length);
 				await Assert.That(reusedLarge).IsEqualTo(large);
 				await Assert.That(reused).IsEquivalentTo(regions.Skip(8).Reverse(), CollectionOrdering.Matching);
-				await Assert.That(cache.CachedBytes).IsEqualTo(0u);
-			}
-
-			cache.Return(reusedLarge, 8 * length);
-
-			foreach (nint region in reused)
-			{
-				cache.Return(region, length);
+				await Assert.That(cached).IsEqualTo(0u);
 			}
 		}
 		finally
@@ -303,17 +303,18 @@ public class Argon2MemoryCacheTest
 			cache.Trim(false);
 			nuint afterTrim = cache.CachedBytes;
 			nint[] reused = [.. Enumerable.Range(0, count).Select(_ => cache.Rent(length))];
+			nuint cached = cache.CachedBytes;
+
+			foreach (nint region in reused)
+			{
+				cache.Return(region, length);
+			}
 
 			using (Assert.Multiple())
 			{
 				await Assert.That(afterTrim).IsEqualTo(count * length);
 				await Assert.That(reused).IsEquivalentTo(recent.Reverse(), CollectionOrdering.Matching);
-				await Assert.That(cache.CachedBytes).IsEqualTo(0u);
-			}
-
-			foreach (nint region in reused)
-			{
-				cache.Return(region, length);
+				await Assert.That(cached).IsEqualTo(0u);
 			}
 		}
 		finally
@@ -343,6 +344,7 @@ public class Argon2MemoryCacheTest
 			cache.Return(region, 4096);
 			nuint refilled = cache.CachedBytes;
 			nint reused = cache.Rent(4096);
+			cache.Return(reused, 4096);
 
 			using (Assert.Multiple())
 			{
@@ -352,8 +354,6 @@ public class Argon2MemoryCacheTest
 				await Assert.That(reused).IsEqualTo(region);
 				await Assert.That(TrimTimer(cache)).IsNotNull();
 			}
-
-			cache.Return(reused, 4096);
 		}
 		finally
 		{
