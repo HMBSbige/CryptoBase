@@ -21,7 +21,7 @@ public class MLDsaKernelTest
 
 	private const int MaxMismatches = 8;
 
-	private static readonly int RModQ = (int)(R % Q);
+	private const int RModQ = (int)(R % Q);
 	private static readonly int RInverse = Power(RModQ, Q - 2);
 	private static readonly int[] Gamma2s = [MLDsaConstants.Gamma2Small, MLDsaConstants.Gamma2Large];
 	private static readonly (int Gamma2, int Beta)[] ParameterSets =

@@ -49,7 +49,7 @@ internal struct X25519MLKemKey<TParameters> where TParameters : struct, IMLKemPa
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, PrivateSeedLength, nameof(source));
 
-		int mlKemLength = MLKemKey<TParameters>.PrivateSeedLength;
+		const int mlKemLength = MLKemKey<TParameters>.PrivateSeedLength;
 		_mlKemKey.ImportPrivateSeed(source.Slice(0, mlKemLength));
 		_x25519Key.ImportPrivateKey(source.Slice(mlKemLength));
 	}
@@ -156,7 +156,7 @@ internal struct X25519MLKemKey<TParameters> where TParameters : struct, IMLKemPa
 			return false;
 		}
 
-		int mlKemLength = MLKemKey<TParameters>.SharedSecretLength;
+		const int mlKemLength = MLKemKey<TParameters>.SharedSecretLength;
 		using CryptoBuffer<byte> secret = new(stackalloc byte[SharedSecretLength]);
 
 		if (!_x25519Key.TryDeriveSharedSecret(ciphertext.Slice(MLKemCiphertextLength), secret.Span.Slice(mlKemLength)))

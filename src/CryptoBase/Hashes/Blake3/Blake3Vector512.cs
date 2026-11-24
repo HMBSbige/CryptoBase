@@ -181,7 +181,7 @@ internal readonly struct Blake3Vector512 : IBlake3XofKernel, IBlake3LaneKernel
 		nuint blockCount = ChunkBlocks;
 
 		// Near the end of the chunks, each lane prefetches the chunk that it hashes in the next batch, as in Hash.
-		nuint nextBatch = 15 * ChunkLength;
+		const nuint nextBatch = 15 * ChunkLength;
 
 		do
 		{

@@ -10,7 +10,7 @@ using System.Text.Json;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
 using static CryptoBase.Tests.TestUtils;
 using static CryptoBase.Tests.X509.X509TestUtils;
-using RsaKey = CryptoBase.Signatures.Rsa.RsaKey;
+using RsaKey = CryptoBase.Rsa.RsaKey;
 
 namespace CryptoBase.Tests.X509;
 

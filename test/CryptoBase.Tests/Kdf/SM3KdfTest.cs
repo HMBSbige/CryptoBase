@@ -91,7 +91,7 @@ public class SM3KdfTest
 			foreach (int shift in (int[])[-150, -40, 0, 40, 150])
 			{
 				byte[] buffer = new byte[1500];
-				int secretOffset = 200;
+				const int secretOffset = 200;
 				int outputOffset = secretOffset + shift;
 				secret.CopyTo(buffer, secretOffset);
 				SM3Kdf.DeriveKey(buffer.AsSpan(secretOffset, secret.Length), buffer.AsSpan(outputOffset, length));

@@ -12,7 +12,7 @@ internal class P256Field52Test() : ECFieldTest<P256Curve, P256Field52, P256Order
 	[Test]
 	public async Task MultiplyTakesLimbsBelow2To56()
 	{
-		ulong most = (1UL << 56) - 1;
+		const ulong most = (1UL << 56) - 1;
 		List<P256Field52> values = [Limbs(most, most, most, most, most), Limbs(most, 0, most, 0, most), Limbs(0, most, 0, most, 0), Limbs(Low - 1, Low - 1, Low - 1, Low - 1, most)];
 		Random random = new(2);
 
@@ -43,7 +43,7 @@ internal class P256Field52Test() : ECFieldTest<P256Curve, P256Field52, P256Order
 	[Test]
 	public async Task WeakReduceTakesLimbsBelow2To62()
 	{
-		ulong most = (1UL << 62) - 1;
+		const ulong most = (1UL << 62) - 1;
 		List<P256Field52> values = [Limbs(most, most, most, most, most), Limbs(0, 0, 0, 0, most), Limbs(most, 0, most, 0, most), Limbs(0, 0, 0, 0, 1UL << 48), Limbs(0, 0, 0, 0, 0), Represent(Largest, AllHigh)!.Value];
 		Random random = new(3);
 

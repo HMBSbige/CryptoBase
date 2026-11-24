@@ -15,10 +15,10 @@ internal class P384Field56Test() : ECFieldTest<P384Curve, P384Field56, P384Order
 	[Test]
 	public async Task MultiplyTakesLeftBelow2To392()
 	{
-		ulong most = (1UL << 63) - 1;
+		const ulong most = (1UL << 63) - 1;
 		ulong wide = 5 * Low - 1;
 		List<P384Field56> lefts = [Topped(most, most, most, most, most, most), Topped(0, most, 0, most, 0, most), Topped(most, 0, most, 0, most, 0), Topped(wide, wide, wide, wide, wide, wide), Topped(Low - 1, Low - 1, Low - 1, Low - 1, Low - 1, Low - 1), Same(0)];
-		ulong right = (1UL << 60) - 1;
+		const ulong right = (1UL << 60) - 1;
 		List<P384Field56> rights = [Same(right), Limbs(right, 0, right, 0, right, 0, right), Limbs(0, right, 0, right, 0, right, 0), Same(wide), Same(0)];
 		Random random = new(2);
 
@@ -46,7 +46,7 @@ internal class P384Field56Test() : ECFieldTest<P384Curve, P384Field56, P384Order
 	[Test]
 	public async Task SquareTakesLimbsBelow2To58()
 	{
-		ulong most = (1UL << 58) - 1;
+		const ulong most = (1UL << 58) - 1;
 		List<P384Field56> values = [Same(most), Limbs(most, 0, most, 0, most, 0, most), Limbs(0, most, 0, most, 0, most, 0), Limbs(Low - 1, Low - 1, Low - 1, Low - 1, Low - 1, Low - 1, most)];
 		Random random = new(2);
 
@@ -71,7 +71,7 @@ internal class P384Field56Test() : ECFieldTest<P384Curve, P384Field56, P384Order
 	[Test]
 	public async Task WeakReduceTakesLimbsBelow2To62()
 	{
-		ulong most = (1UL << 62) - 1;
+		const ulong most = (1UL << 62) - 1;
 		List<P384Field56> values = [Same(most), Limbs(0, 0, 0, 0, 0, 0, most), Limbs(0, most, 0, most, 0, most, most), Limbs(0, 0, 0, 0, 0, 0, 1UL << 48), Same(0), Represent(Largest, AllHigh)!.Value];
 		Random random = new(3);
 

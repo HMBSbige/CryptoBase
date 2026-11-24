@@ -230,7 +230,7 @@ internal static class HashAlgorithmTestUtils<TAlgorithm> where TAlgorithm : clas
 		else
 		{
 			int firstLength = blockSize - 1;
-			int middleLength = HashAlgorithmTestUtils.DirectBatchLength + 1;
+			const int middleLength = HashAlgorithmTestUtils.DirectBatchLength + 1;
 			hashAlgorithm.Append(source.AsSpan().Slice(sourceOffset, firstLength));
 			hashAlgorithm.Append(source.AsSpan().Slice(sourceOffset + firstLength, middleLength));
 			hashAlgorithm.Append(source.AsSpan().Slice(sourceOffset + firstLength + middleLength, 1));

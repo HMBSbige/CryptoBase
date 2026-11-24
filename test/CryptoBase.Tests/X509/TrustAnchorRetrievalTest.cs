@@ -1467,7 +1467,7 @@ public class TrustAnchorRetrievalTest
 	[Test]
 	public async Task StopsWorkingAroundUnknownStatusesAtTheLimit()
 	{
-		int limit = CertificatePathSearch.MaxRejectedEdges;
+		const int limit = CertificatePathSearch.MaxRejectedEdges;
 		List<Authority> roots = [.. Enumerable.Range(0, limit + 2).Select(static i => Authority.CreateRoot($"CN=Root {i}"))];
 		using Authority intermediate = roots[0].CreateIntermediate();
 		byte[] subjectPublicKeyInfo = intermediate.Certificate.PublicKeyInfo.Encoded.ToArray();
@@ -1512,7 +1512,7 @@ public class TrustAnchorRetrievalTest
 	[Test]
 	public async Task StopsWorkingAroundRevokedCertificatesAtTheLimit()
 	{
-		int limit = CertificatePathSearch.MaxRejectedEdges;
+		const int limit = CertificatePathSearch.MaxRejectedEdges;
 		List<Authority> roots = [.. Enumerable.Range(0, limit + 2).Select(static i => Authority.CreateRoot($"CN=Root {i}"))];
 		using Authority intermediate = roots[0].CreateIntermediate();
 		byte[] subjectPublicKeyInfo = intermediate.Certificate.PublicKeyInfo.Encoded.ToArray();
@@ -2613,7 +2613,7 @@ public class TrustAnchorRetrievalTest
 		using (Assert.Multiple())
 		{
 			await Assert.That(finished).IsSameReferenceAs(retrieval);
-			await Assert.That(retrieval.IsCompletedSuccessfully && retrieval.Result.IsEmpty).IsTrue();
+			await Assert.That(retrieval is { IsCompletedSuccessfully: true, Result.IsEmpty: true }).IsTrue();
 		}
 	}
 

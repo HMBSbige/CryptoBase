@@ -42,7 +42,7 @@ internal static class Field448TestUtils
 
 	internal static Field448 Split(BigInteger value)
 	{
-		ulong mask = (1UL << 56) - 1;
+		const ulong mask = (1UL << 56) - 1;
 		ulong[] limbs = new ulong[8];
 
 		for (int i = 0; i < 8; ++i)

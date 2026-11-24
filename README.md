@@ -142,7 +142,7 @@ To measure the speed of the algorithms on your machine, run the [speed test](doc
 | ---------- |:------:|
 | [ECDH](docs/key-agreement.md) | ✅ |
 | [ECDSA](docs/digital-signatures.md) | ✅ |
-| [RSA](docs/digital-signatures.md) | ✅ |
+| [RSA](docs/rsa.md) | ✅ |
 | [X25519](docs/key-agreement.md) | ✅ |
 | [X448](docs/key-agreement.md) | ✅ |
 | [Ed25519](docs/digital-signatures.md) | ✅ |

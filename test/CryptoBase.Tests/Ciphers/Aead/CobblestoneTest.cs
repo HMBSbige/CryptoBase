@@ -126,8 +126,8 @@ internal class CobblestoneTest<TCipher> where TCipher : class, ICobblestoneCiphe
 	[Test]
 	public async Task LengthsFollowTheChunking()
 	{
-		long maxMessageLength = MaxChunkCount * ChunkSize - 1;
-		long maxCiphertextLength = HeaderSize + (MaxChunkCount - 1) * (ChunkSize + TagSize) + ChunkSize - 1 + TagSize;
+		const long maxMessageLength = MaxChunkCount * ChunkSize - 1;
+		const long maxCiphertextLength = HeaderSize + (MaxChunkCount - 1) * (ChunkSize + TagSize) + ChunkSize - 1 + TagSize;
 
 		using (Assert.Multiple())
 		{

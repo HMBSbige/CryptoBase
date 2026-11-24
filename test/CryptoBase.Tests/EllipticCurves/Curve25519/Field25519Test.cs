@@ -139,7 +139,7 @@ public class Field25519Test
 	public async Task ZeroTestsReduceFirst()
 	{
 		List<string> failures = [];
-		ulong mask = (1UL << 51) - 1;
+		const ulong mask = (1UL << 51) - 1;
 		Field25519[] zeros = [Limbs(0, 0, 0, 0, 0), Limbs(mask - 18, mask, mask, mask, mask), Limbs((1UL << 52) - 38, (1UL << 52) - 2, (1UL << 52) - 2, (1UL << 52) - 2, (1UL << 52) - 2)];
 		Field25519 one = Element(1);
 

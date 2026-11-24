@@ -30,19 +30,19 @@ internal static class Field25519TestUtils
 	internal static Field25519 Element(BigInteger value)
 	{
 		BigInteger v = Mod(value);
-		ulong mask = (1UL << 51) - 1;
+		const ulong mask = (1UL << 51) - 1;
 		return Limbs((ulong)(v & mask), (ulong)(v >> 51 & mask), (ulong)(v >> 102 & mask), (ulong)(v >> 153 & mask), (ulong)(v >> 204));
 	}
 
 	internal static bool IsTight(Field25519 value)
 	{
-		return value.L0 < TightLimb0 && value.L1 < TightLow && value.L2 < TightLow && value.L3 < TightLow && value.L4 < TightLow;
+		return value is { L0: < TightLimb0, L1: < TightLow, L2: < TightLow, L3: < TightLow, L4: < TightLow };
 	}
 
 	internal static bool IsCanonical(Field25519 value)
 	{
-		ulong limit = 1UL << 51;
-		return value.L0 < limit && value.L1 < limit && value.L2 < limit && value.L3 < limit && value.L4 < limit && ValueOf(value) < P;
+		const ulong limit = 1UL << 51;
+		return value is { L0: < limit, L1: < limit, L2: < limit, L3: < limit, L4: < limit } && ValueOf(value) < P;
 	}
 
 	internal static bool IsBelow(Field25519 value, ulong bound)
@@ -76,7 +76,7 @@ internal static class Field25519TestUtils
 
 		foreach (BigInteger special in (BigInteger[])[P, P + 1, (BigInteger.One << 255) - 1])
 		{
-			ulong mask = (1UL << 51) - 1;
+			const ulong mask = (1UL << 51) - 1;
 			values.Add(Limbs((ulong)(special & mask), (ulong)(special >> 51 & mask), (ulong)(special >> 102 & mask), (ulong)(special >> 153 & mask), (ulong)(special >> 204)));
 		}
 

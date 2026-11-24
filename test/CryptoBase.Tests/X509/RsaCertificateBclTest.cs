@@ -1,12 +1,12 @@
 using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures.Ecdsa;
-using CryptoBase.Tests.Signatures.Rsa;
+using CryptoBase.Tests.Rsa;
 using CryptoBase.X509;
 using System.Security.Cryptography.X509Certificates;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
 using static CryptoBase.Tests.X509.TestPki;
 using static CryptoBase.Tests.X509.X509TestUtils;
-using RsaKey = CryptoBase.Signatures.Rsa.RsaKey;
+using RsaKey = CryptoBase.Rsa.RsaKey;
 
 namespace CryptoBase.Tests.X509;
 

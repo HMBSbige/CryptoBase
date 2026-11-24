@@ -215,6 +215,27 @@ public sealed record RsaVerifyTestGroup(string Type, string Sha, byte[] PublicKe
 	}
 }
 
+// A test of an RSAES-OAEP decryption group, which holds the private key, the hash of the label and that of MGF1.
+public sealed record RsaOaepTestVector(byte[] Msg, byte[] Ct, byte[] Label) : WycheproofTestVector
+{
+	[JsonIgnore]
+	public string Sha { get; init; } = "";
+
+	[JsonIgnore]
+	public string MgfSha { get; init; } = "";
+
+	[JsonIgnore]
+	public byte[] PrivateKeyPkcs8 { get; init; } = [];
+}
+
+public sealed record RsaOaepTestGroup(string Sha, string MgfSha, byte[] PrivateKeyPkcs8) : WycheproofTestGroup<RsaOaepTestVector>
+{
+	public override RsaOaepTestVector Complete(RsaOaepTestVector test)
+	{
+		return test with { Sha = Sha, MgfSha = MgfSha, PrivateKeyPkcs8 = PrivateKeyPkcs8 };
+	}
+}
+
 public sealed record EddsaVerifyTestVector(byte[] Msg, byte[] Sig) : WycheproofTestVector
 {
 	[JsonIgnore]

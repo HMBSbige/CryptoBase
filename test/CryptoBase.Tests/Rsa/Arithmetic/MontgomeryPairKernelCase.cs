@@ -1,0 +1,190 @@
+using CryptoBase.Rsa.Arithmetic;
+
+namespace CryptoBase.Tests.Rsa.Arithmetic;
+
+// A pair kernel under test, which MontgomeryPairContext pairs with two moduli, and the contexts of the moduli that MontgomeryKernelDispatch.CreatePair makes for it.
+public abstract class MontgomeryPairKernelCase : IKernelCase
+{
+	// The kernels and windows that MontgomeryKernelDispatch.CreatePair builds.
+	public static IEnumerable<MontgomeryPairKernelCase> All()
+	{
+		yield return new Case<MontgomeryPairKernelAdvSimd<Radix28>, MontgomeryKernelAdvSimd<Radix28>>();
+		yield return new Avx512Case<MontgomeryPairKernelAvx512<Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>>>();
+		yield return new Avx512Case<MontgomeryPairKernelAvx512<Avx512WindowPair<Avx512PairWindow, Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>>>>();
+		yield return new Avx512Case<MontgomeryPairKernelAvx512<Avx512WindowPair<Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>, Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>>>>();
+		yield return new Avx512Case<MontgomeryPairKernelAvx512<Avx512WindowPair<Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>, Avx512WindowPair<Avx512PairWindow, Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>>>>>();
+		yield return new Avx512Case<MontgomeryPairKernelAvx512<Avx512WindowPair<Avx512WindowPair<Avx512PairWindow, Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>>, Avx512WindowPair<Avx512PairWindow, Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>>>>>();
+		yield return new Avx512Case<MontgomeryPairKernelAvx512<Avx512WindowPair<Avx512WindowPair<Avx512PairWindow, Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>>, Avx512WindowPair<Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>, Avx512WindowPair<Avx512PairWindow, Avx512PairWindow>>>>>();
+		yield return new Avx2Case<Avx2PairWindow>();
+		yield return new Avx2Case<Avx2WindowPair<Avx2PairWindow, Avx2PairWindow>>();
+		yield return new Avx2Case<Avx2WindowPair<Avx2PairWindow, Avx2WindowPair<Avx2PairWindow, Avx2PairWindow>>>();
+		yield return new Avx2Case<Avx2WindowPair<Avx2WindowPair<Avx2PairWindow, Avx2PairWindow>, Avx2WindowPair<Avx2PairWindow, Avx2PairWindow>>>();
+	}
+
+	public abstract Type KernelType { get; }
+
+	// The vectors that the window of a kernel of MontgomeryPairKernelAvx2 keeps in registers.
+	internal virtual int WindowVectors => throw new InvalidOperationException($"{KernelType.Name} has no window.");
+
+	// The limb counts that the tests take for the kernel: those of one to three limbs whose digits it holds, the ends of the range of limb counts up to 256 for which MontgomeryKernelDispatch.CreatePair takes it, and the RSA sizes of CommonLimbCounts within the range.
+	internal int[] LimbCountsToTest => field ??= GetLimbCountsToTest();
+
+	public abstract bool IsSupported { get; }
+
+	internal abstract int DigitBits { get; }
+
+	internal abstract int MinDigitCount { get; }
+
+	internal abstract int MaxDigitCount { get; }
+
+	// Whether the kernel holds the digits of moduli of limbs limbs.
+	internal bool Fits(int limbs)
+	{
+		int digits = GetDigitCount(limbs);
+		return digits >= MinDigitCount && digits <= MaxDigitCount;
+	}
+
+	internal int GetDigitCount(int limbs)
+	{
+		return (64 * limbs + 2 + DigitBits - 1) / DigitBits;
+	}
+
+	internal abstract MontgomeryPairContext Create(MontgomeryContext first, MontgomeryContext second);
+
+	// A context with the digits of the kernel.
+	internal abstract MontgomeryContext CreateSingle(ulong[] modulus);
+
+	internal abstract int GetScratchLength(int digitCount);
+
+	// The kernel itself, on pairs of elements of the digits of two moduli, which it prepares, with a scratch of its own or the one given.
+	internal void Multiply(ReadOnlySpan<ulong> first, ReadOnlySpan<ulong> second, Span<ulong> result, ReadOnlySpan<ulong> left, ReadOnlySpan<ulong> right)
+	{
+		Multiply(first, second, result, left, right, new ulong[GetScratchLength(first.Length)]);
+	}
+
+	internal void Square(ReadOnlySpan<ulong> first, ReadOnlySpan<ulong> second, Span<ulong> result, ReadOnlySpan<ulong> value)
+	{
+		Square(first, second, result, value, new ulong[GetScratchLength(first.Length)]);
+	}
+
+	internal abstract void Multiply(ReadOnlySpan<ulong> first, ReadOnlySpan<ulong> second, Span<ulong> result, ReadOnlySpan<ulong> left, ReadOnlySpan<ulong> right, Span<ulong> scratch);
+
+	internal abstract void Square(ReadOnlySpan<ulong> first, ReadOnlySpan<ulong> second, Span<ulong> result, ReadOnlySpan<ulong> value, Span<ulong> scratch);
+
+	// The words of a pair context of the kernel that are not zero, as RsaArithmeticTestUtils.NonZeroWords gives them.
+	internal abstract IEnumerable<string> NonZeroWords(MontgomeryPairContext pair);
+
+	public override string ToString()
+	{
+		string family = KernelType.Name[..KernelType.Name.IndexOf('`')];
+		return KernelType.GetGenericTypeDefinition() == typeof(MontgomeryPairKernelAvx2<>) ? $"{family}<{WindowVectors} vectors in registers>" : $"{family}<{MaxDigitCount} digits>";
+	}
+
+	private int[] GetLimbCountsToTest()
+	{
+		int[] dispatched = [.. Enumerable.Range(1, 256).Where(IsDispatched)];
+		IEnumerable<int> limbCounts = dispatched is [] ? [] : [dispatched[0], dispatched[^1], .. RsaArithmeticTestUtils.CommonLimbCounts.Intersect(dispatched)];
+		return [.. limbCounts.Concat(Enumerable.Range(1, 3).Where(Fits)).Distinct().Order()];
+	}
+
+	// Whether MontgomeryKernelDispatch.CreatePair takes the kernel for moduli of limbs limbs where it takes the family.
+	// That is the MontgomeryPairKernelAvx512 window with as many vectors of four digits as the moduli need, the MontgomeryPairKernelAvx2 window that GetAvx2PairWindowVectors gives, or MontgomeryPairKernelAdvSimd from MinAdvSimdPairLimbs to MaxAdvSimdPairLimbs.
+	private bool IsDispatched(int limbs)
+	{
+		if (!Fits(limbs))
+		{
+			return false;
+		}
+
+		int digits = GetDigitCount(limbs);
+		Type family = KernelType.GetGenericTypeDefinition();
+
+		if (family == typeof(MontgomeryPairKernelAvx512<>))
+		{
+			return (digits + 3) / 4 == MaxDigitCount / 4;
+		}
+
+		if (family == typeof(MontgomeryPairKernelAvx2<>))
+		{
+			return MontgomeryKernelDispatch.GetAvx2PairWindowVectors(digits) == WindowVectors;
+		}
+
+		return limbs is >= MontgomeryKernelDispatch.MinAdvSimdPairLimbs and <= MontgomeryKernelDispatch.MaxAdvSimdPairLimbs;
+	}
+
+	// The kernel with the contexts of TSingle.
+	private sealed class Case<TKernel, TSingle> : Case<TKernel> where TKernel : IMontgomeryPairKernel where TSingle : IMontgomeryKernel
+	{
+		internal override MontgomeryContext CreateSingle(ulong[] modulus)
+		{
+			return new MontgomeryContext<TSingle>(modulus);
+		}
+	}
+
+	// With AVX-512, MontgomeryKernelDispatch.Create gives the digits of the pair kernel to every modulus that it takes.
+	private sealed class Avx512Case<TKernel> : Case<TKernel> where TKernel : IMontgomeryPairKernel
+	{
+		internal override MontgomeryContext CreateSingle(ulong[] modulus)
+		{
+			return MontgomeryKernelDispatch.Create(modulus);
+		}
+	}
+
+	// Without AVX-512, MontgomeryKernelDispatch.Create gives every modulus the digits of the pair kernel; with it, a MontgomeryKernelAvx2 context of one vector does.
+	private sealed class Avx2Case<TWindow> : Case<MontgomeryPairKernelAvx2<TWindow>> where TWindow : struct, IAvx2Window<TWindow>
+	{
+		internal override int WindowVectors => TWindow.Count;
+
+		internal override MontgomeryContext CreateSingle(ulong[] modulus)
+		{
+			return MontgomeryKernelAvx512<Avx512Window>.IsSupported ? new MontgomeryContext<MontgomeryKernelAvx2<Avx2Window>>(modulus) : MontgomeryKernelDispatch.Create(modulus);
+		}
+	}
+
+	private abstract class Case<TKernel> : MontgomeryPairKernelCase where TKernel : IMontgomeryPairKernel
+	{
+		public override Type KernelType => typeof(TKernel);
+
+		public override bool IsSupported => TKernel.IsSupported;
+
+		internal override int DigitBits => TKernel.DigitBits;
+
+		internal override int MinDigitCount => TKernel.MinDigitCount;
+
+		internal override int MaxDigitCount => TKernel.MaxDigitCount;
+
+		internal override MontgomeryPairContext Create(MontgomeryContext first, MontgomeryContext second)
+		{
+			return new MontgomeryPairContext<TKernel>(first, second);
+		}
+
+		internal override int GetScratchLength(int digitCount)
+		{
+			return TKernel.GetScratchLength(digitCount);
+		}
+
+		internal override void Multiply(ReadOnlySpan<ulong> first, ReadOnlySpan<ulong> second, Span<ulong> result, ReadOnlySpan<ulong> left, ReadOnlySpan<ulong> right, Span<ulong> scratch)
+		{
+			ulong[] moduli = new ulong[2 * first.Length];
+			MontgomeryPairContext.Interleave(first, second, moduli);
+			TKernel.Multiply(result, left, right, moduli, NegativeInverse(first), NegativeInverse(second), scratch);
+		}
+
+		internal override void Square(ReadOnlySpan<ulong> first, ReadOnlySpan<ulong> second, Span<ulong> result, ReadOnlySpan<ulong> value, Span<ulong> scratch)
+		{
+			ulong[] moduli = new ulong[2 * first.Length];
+			MontgomeryPairContext.Interleave(first, second, moduli);
+			TKernel.Square(result, value, moduli, NegativeInverse(first), NegativeInverse(second), scratch);
+		}
+
+		internal override IEnumerable<string> NonZeroWords(MontgomeryPairContext pair)
+		{
+			return RsaArithmeticTestUtils.NonZeroWords(pair, typeof(MontgomeryPairContext<TKernel>));
+		}
+
+		private static ulong NegativeInverse(ReadOnlySpan<ulong> modulusDigits)
+		{
+			return 0 - Limbs.InvertWord(modulusDigits[0]) & (1UL << TKernel.DigitBits) - 1;
+		}
+	}
+}

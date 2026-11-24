@@ -198,7 +198,7 @@ internal readonly struct Curve25519Scalar : ICurve25519Kernel
 		}
 
 		ScalarDigits.ReadLimbs(b, limbs);
-		int width = EdwardsBaseTable.Width;
+		const int width = EdwardsBaseTable.Width;
 		int windowLength = EdwardsBaseTable.WindowLength;
 		Span<sbyte> baseDigits = stackalloc sbyte[EdwardsBaseTable.WindowCount];
 		LimbArithmetic.RecodeSignedWindows(limbs, width, baseDigits);

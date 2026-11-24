@@ -376,7 +376,7 @@ public class Blake3HashAlgorithmTest
 		const int headLength = 4 * 1024 + 500;
 		const int pieceLength = 1000;
 		const int pieces = 40;
-		int length = headLength + 2 + pieces * pieceLength;
+		const int length = headLength + 2 + pieces * pieceLength;
 		byte[] source = CreateDeterministicSource(length + 300_000);
 		byte[] destination = new byte[Blake3HashAlgorithm.HashLength];
 		using Blake3HashAlgorithm hasher = Blake3TestUtils.CreateHasher(mode);

@@ -11,6 +11,7 @@
 - [Key agreement](key-agreement.md)
 - [Hybrid public key encryption](hpke.md)
 - [Digital signatures](digital-signatures.md)
+- [RSA](rsa.md)
 - [SM2](sm2.md)
 - [SM9](sm9.md)
 - [X.509 certificates](x509.md)

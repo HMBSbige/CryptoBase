@@ -364,8 +364,8 @@ public class SM2Field29LanesTest
 		public List<string> Visit<TField>() where TField : unmanaged, ISM2Field29Lanes<TField>
 		{
 			List<string> failures = [];
-			ulong most = (1UL << 32) - 1;
-			ulong top = (1UL << 36) - 1;
+			const ulong most = (1UL << 32) - 1;
+			const ulong top = (1UL << 36) - 1;
 			Random random = new(3);
 			List<ulong[]> values = [[.. Repeat(most).Take(8), top], [.. new ulong[8], top], [.. Repeat(most).Take(8), 0], new ulong[LimbCount], Split(P), Split(2 * P - 1), [.. new ulong[8], 1UL << 24], FourP];
 
@@ -467,7 +467,7 @@ public class SM2Field29LanesTest
 		public List<string> Visit<TField>() where TField : unmanaged, ISM2Field29Lanes<TField>
 		{
 			List<string> failures = [];
-			ulong most = (1UL << 62) - 1;
+			const ulong most = (1UL << 62) - 1;
 			ulong[] p = Split(P);
 			Random random = new(7);
 			List<ulong[]> values = [Repeat(most), [.. Repeat(most).Take(8), most - 1], Split(1), Split(P), Split(2 * P - 1), Split(2 * P - 2), new ulong[LimbCount], FourP];

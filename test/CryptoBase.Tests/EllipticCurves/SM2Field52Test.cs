@@ -13,9 +13,9 @@ internal class SM2Field52Test() : ECFieldTest<SM2Curve, SM2Field52, SM2Order>(52
 	[Test]
 	public async Task MultiplyTakesLimbsBelow2To56()
 	{
-		ulong most = (1UL << 56) - 1;
-		ulong lowByte = 0xFF;
-		ulong highBits = (1UL << 36) - 16;
+		const ulong most = (1UL << 56) - 1;
+		const ulong lowByte = 0xFF;
+		const ulong highBits = (1UL << 36) - 16;
 		List<SM2Field52> values = [Limbs(most, most, most, most, most), Limbs(most, 0, most, 0, most), Limbs(0, most, 0, most, 0), Limbs(Low - 1, Low - 1, Low - 1, Low - 1, most), Limbs(lowByte, 0, 0, 0, 0), Limbs(lowByte, lowByte, lowByte, lowByte, lowByte), Limbs(highBits, highBits, highBits, highBits, highBits), Limbs(1, 0, 0, 0, 0)];
 		Random random = new(2);
 
@@ -47,7 +47,7 @@ internal class SM2Field52Test() : ECFieldTest<SM2Curve, SM2Field52, SM2Order>(52
 	[Test]
 	public async Task WeakReduceTakesLimbsBelow2To62()
 	{
-		ulong most = (1UL << 62) - 1;
+		const ulong most = (1UL << 62) - 1;
 		List<SM2Field52> values = [Limbs(most, most, most, most, most), Limbs(0, 0, 0, 0, most), Limbs(most, 0, most, 0, most), Limbs(0, most, 0, 0, most), Limbs(0, 0, 0, 0, 1UL << 48), Limbs(0, 0, 0, 0, 0), Represent(Largest, AllHigh)!.Value];
 		Random random = new(3);
 

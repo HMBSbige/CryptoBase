@@ -1,7 +1,7 @@
 using CryptoBase.Abstractions.Signatures;
+using CryptoBase.Rsa;
 using CryptoBase.Signatures;
-using CryptoBase.Signatures.Rsa;
-using static CryptoBase.Tests.Signatures.Rsa.RsaTestUtils;
+using static CryptoBase.Tests.Rsa.RsaTestUtils;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
 
 namespace CryptoBase.Tests.Wycheproof;
@@ -28,6 +28,16 @@ public class WycheproofRsaTest
 		"rsa_pss_3072_shake256_test.json", "rsa_pss_4096_sha256_mgf1_32_test.json", "rsa_pss_4096_sha384_mgf1_48_test.json", "rsa_pss_4096_sha512_mgf1_32_params_test.json",
 		"rsa_pss_4096_sha512_mgf1_32_test.json", "rsa_pss_4096_sha512_mgf1_64_params_test.json", "rsa_pss_4096_sha512_mgf1_64_test.json", "rsa_pss_4096_shake256_test.json",
 		"rsa_pss_misc_params_test.json", "rsa_pss_misc_test.json"
+	];
+
+	// Every RSAES-OAEP file but those of SHA-512/224 and SHA-512/256, which have no hash core.
+	private static readonly string[] OaepFiles =
+	[
+		"rsa_oaep_2048_sha1_mgf1sha1_test.json", "rsa_oaep_2048_sha224_mgf1sha1_test.json", "rsa_oaep_2048_sha224_mgf1sha224_test.json", "rsa_oaep_2048_sha256_mgf1sha1_test.json",
+		"rsa_oaep_2048_sha256_mgf1sha256_test.json", "rsa_oaep_2048_sha384_mgf1sha1_test.json", "rsa_oaep_2048_sha384_mgf1sha384_test.json", "rsa_oaep_2048_sha512_mgf1sha1_test.json",
+		"rsa_oaep_2048_sha512_mgf1sha512_test.json", "rsa_oaep_3072_sha256_mgf1sha1_test.json", "rsa_oaep_3072_sha256_mgf1sha256_test.json", "rsa_oaep_3072_sha512_mgf1sha1_test.json",
+		"rsa_oaep_3072_sha512_mgf1sha512_test.json", "rsa_oaep_4096_sha256_mgf1sha1_test.json", "rsa_oaep_4096_sha256_mgf1sha256_test.json", "rsa_oaep_4096_sha512_mgf1sha1_test.json",
+		"rsa_oaep_4096_sha512_mgf1sha512_test.json", "rsa_oaep_misc_test.json"
 	];
 
 	// The acceptable vectors that the tests accept carry these flags in each file.
@@ -67,6 +77,11 @@ public class WycheproofRsaTest
 	public static IEnumerable<Func<RsaSignatureTestVector>> PssVectors()
 	{
 		return PssFiles.SelectMany(static fileName => WycheproofVectors.Load<RsaVerifyTestGroup, RsaSignatureTestVector>(fileName)).Select(static vector => (Func<RsaSignatureTestVector>)(() => vector));
+	}
+
+	public static IEnumerable<Func<RsaOaepTestVector>> OaepVectors()
+	{
+		return OaepFiles.SelectMany(static fileName => WycheproofVectors.Load<RsaOaepTestGroup, RsaOaepTestVector>(fileName)).Select(static vector => (Func<RsaOaepTestVector>)(() => vector));
 	}
 
 	[Test]
@@ -215,6 +230,31 @@ public class WycheproofRsaTest
 				bool expected = sameHashes && (saltLength == hashLength ? vector.Result is WycheproofResult.Valid : vector.Comment == $"s_len changed to {hashLength}");
 				await Assert.That(key.Verify(algorithm, vector.Msg, vector.Sig)).IsEqualTo(expected);
 			}
+		}
+	}
+
+	// The acceptable vectors, the ciphertexts 0 and 1 with labels that make them valid encodings, decrypt: RFC 8017 allows them, though SP 800-56B rules them out.
+	[Test]
+	[MethodDataSource(nameof(OaepVectors))]
+	public async Task OaepDecryption(RsaOaepTestVector vector)
+	{
+		using RsaKey key = RsaKey.ImportPkcs8PrivateKey(vector.PrivateKeyPkcs8);
+		IOaep oaep = GetOaep(vector.Sha, vector.MgfSha);
+		byte[]? plaintext = oaep.Decrypt(key, vector.Ct, vector.Label);
+
+		if (vector.Result is WycheproofResult.Invalid)
+		{
+			await Assert.That(plaintext).IsNull();
+			return;
+		}
+
+		byte[] ciphertext = oaep.Encrypt(key, vector.Msg, vector.Label);
+
+		using (Assert.Multiple())
+		{
+			await Assert.That(vector.Result is WycheproofResult.Valid || vector.Flags.Contains("SmallIntegerCiphertext")).IsTrue();
+			await Assert.That(plaintext).IsEquivalentTo(vector.Msg, CollectionOrdering.Matching);
+			await Assert.That(oaep.Decrypt(key, ciphertext, vector.Label)).IsEquivalentTo(vector.Msg, CollectionOrdering.Matching);
 		}
 	}
 

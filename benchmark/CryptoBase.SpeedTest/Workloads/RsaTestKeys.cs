@@ -1,7 +1,7 @@
 namespace CryptoBase.SpeedTest.Workloads;
 
 /// <summary>
-/// Fixed RSA private keys, so that the signature workloads need not generate keys at start-up.
+/// Fixed RSA private keys, so that the RSA workloads need not generate keys at start-up.
 /// </summary>
 /// <remarks>
 /// For measuring speed only: these keys are public and must never protect anything.

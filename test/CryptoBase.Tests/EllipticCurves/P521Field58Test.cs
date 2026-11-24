@@ -49,7 +49,7 @@ internal class P521Field58Test() : ECFieldTest<P521Curve, P521Field58, P521Order
 	[Test]
 	public async Task WeakReduceTakesLimbsBelow2To64Less2To7()
 	{
-		ulong most = ulong.MaxValue - (1UL << 7);
+		const ulong most = ulong.MaxValue - (1UL << 7);
 		List<P521Field58> values = [Limbs(most, most, most, most, most, most, most, most, most), Limbs(0, 0, 0, 0, 0, 0, 0, 0, most), Limbs(most, 0, most, 0, most, 0, most, 0, most), Limbs(Low - 1, Low - 1, Low - 1, Low - 1, Low - 1, Low - 1, Low - 1, Low - 1, most), Limbs(0, 0, 0, 0, 0, 0, 0, 0, 0), Sized(1000)];
 		Random random = new(3);
 

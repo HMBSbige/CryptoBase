@@ -1,9 +1,11 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Configs;
 using CryptoBase.Abstractions.Signatures;
-using CryptoBase.Signatures.Rsa;
+using CryptoBase.Hashes.Sha2;
+using CryptoBase.Rsa;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Digests;
+using Org.BouncyCastle.Crypto.Encodings;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Generators;
 using Org.BouncyCastle.Crypto.Parameters;
@@ -203,5 +205,97 @@ public class RsaGenerateKeyBenchmark
 	public AsymmetricCipherKeyPair BouncyCastleGenerateKey()
 	{
 		return _bouncyCastleGenerator.GenerateKeyPair();
+	}
+}
+
+// RSAES-OAEP with SHA-256 for the label and MGF1, and an empty label, of a 32-byte plaintext such as a key.
+[MemoryDiagnoser]
+[CategoriesColumn]
+[GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
+public class RsaOaepBenchmark
+{
+	private readonly byte[] _plaintext = RandomNumberGenerator.GetBytes(32);
+	private byte[] _destination = [];
+	private byte[] _ciphertext = [];
+	private RsaKey _cryptoBase = null!;
+	private RSA _bcl = null!;
+	private OaepEncoding _bouncyCastleEncryptor = null!;
+	private OaepEncoding _bouncyCastleDecryptor = null!;
+
+	[Params(2048, 3072, 4096)]
+	public int ModulusBits { get; set; }
+
+	[GlobalSetup]
+	public void Setup()
+	{
+		_bcl = RSA.Create(ModulusBits);
+		byte[] pkcs8PrivateKey = _bcl.ExportPkcs8PrivateKey();
+		_cryptoBase = RsaKey.ImportPkcs8PrivateKey(pkcs8PrivateKey);
+		_destination = new byte[_cryptoBase.ModulusLength];
+		_bouncyCastleEncryptor = new OaepEncoding(new RsaBlindedEngine(), new Sha256Digest());
+		_bouncyCastleEncryptor.Init(true, PublicKeyFactory.CreateKey(_bcl.ExportSubjectPublicKeyInfo()));
+		_bouncyCastleDecryptor = new OaepEncoding(new RsaBlindedEngine(), new Sha256Digest());
+		_bouncyCastleDecryptor.Init(false, PrivateKeyFactory.CreateKey(pkcs8PrivateKey));
+
+		Func<byte[]>[] encryptors = [() => _destination.AsSpan(0, CryptoBaseEncrypt()).ToArray(), () => _destination.AsSpan(0, BclEncrypt()).ToArray(), BouncyCastleEncrypt];
+
+		foreach (Func<byte[]> encrypt in encryptors)
+		{
+			_ciphertext = encrypt();
+
+			if (!CryptoBaseDecrypt() || !_destination.AsSpan(0, _plaintext.Length).SequenceEqual(_plaintext) || !_destination.AsSpan(0, BclDecrypt()).SequenceEqual(_plaintext) || !BouncyCastleDecrypt().AsSpan().SequenceEqual(_plaintext))
+			{
+				throw new InvalidOperationException("Benchmark implementations rejected each other's ciphertexts.");
+			}
+		}
+	}
+
+	[GlobalCleanup]
+	public void Cleanup()
+	{
+		_cryptoBase.Dispose();
+		_bcl.Dispose();
+	}
+
+	[Benchmark(Baseline = true)]
+	[BenchmarkCategory("Encrypt")]
+	public int CryptoBaseEncrypt()
+	{
+		return _cryptoBase.EncryptOaep<Sha256Core>(_plaintext, _destination);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("Encrypt")]
+	public int BclEncrypt()
+	{
+		return _bcl.Encrypt(_plaintext, _destination, RSAEncryptionPadding.OaepSHA256);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("Encrypt")]
+	public byte[] BouncyCastleEncrypt()
+	{
+		return _bouncyCastleEncryptor.ProcessBlock(_plaintext, 0, _plaintext.Length);
+	}
+
+	[Benchmark(Baseline = true)]
+	[BenchmarkCategory("Decrypt")]
+	public bool CryptoBaseDecrypt()
+	{
+		return _cryptoBase.TryDecryptOaep<Sha256Core>(_ciphertext, _destination, out _);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("Decrypt")]
+	public int BclDecrypt()
+	{
+		return _bcl.Decrypt(_ciphertext, _destination, RSAEncryptionPadding.OaepSHA256);
+	}
+
+	[Benchmark]
+	[BenchmarkCategory("Decrypt")]
+	public byte[] BouncyCastleDecrypt()
+	{
+		return _bouncyCastleDecryptor.ProcessBlock(_ciphertext, 0, _ciphertext.Length);
 	}
 }

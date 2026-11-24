@@ -1,4 +1,6 @@
+using CryptoBase.Hashes.Sha2;
 using CryptoBase.Hpke;
+using CryptoBase.Rsa;
 using CryptoBase.SM2;
 using CryptoBase.SM9;
 
@@ -161,6 +163,40 @@ internal sealed class SM9EncryptionWorkload : PublicKeyEncryptionWorkload
 	protected override bool TryDecrypt(ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, out int bytesWritten)
 	{
 		return _recipient.TryDecrypt(ciphertext, plaintext, out bytesWritten);
+	}
+}
+
+/// <summary>
+/// RSAES-OAEP with SHA-256 and MGF1 with SHA-256, and an empty label, to the public key of a fixed built-in key.
+/// </summary>
+internal sealed class RsaOaepWorkload : PublicKeyEncryptionWorkload
+{
+	private readonly RsaKey _recipient;
+	private readonly RsaKey _sender;
+
+	public RsaOaepWorkload(int modulusBits, bool decrypt) : base(decrypt)
+	{
+		_recipient = RsaKey.ImportPkcs8PrivateKey(RsaTestKeys.GetPkcs8PrivateKey(modulusBits));
+		byte[] spki = new byte[_recipient.SubjectPublicKeyInfoLength];
+		_recipient.ExportSubjectPublicKeyInfo(spki);
+		_sender = RsaKey.ImportSubjectPublicKeyInfo(spki);
+		Initialize(_recipient.ModulusLength);
+	}
+
+	public override void Dispose()
+	{
+		_recipient.Dispose();
+		_sender.Dispose();
+	}
+
+	protected override int Encrypt(ReadOnlySpan<byte> plaintext, Span<byte> ciphertext)
+	{
+		return _sender.EncryptOaep<Sha256Core>(plaintext, ciphertext);
+	}
+
+	protected override bool TryDecrypt(ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, out int bytesWritten)
+	{
+		return _recipient.TryDecryptOaep<Sha256Core>(ciphertext, plaintext, out bytesWritten);
 	}
 }
 

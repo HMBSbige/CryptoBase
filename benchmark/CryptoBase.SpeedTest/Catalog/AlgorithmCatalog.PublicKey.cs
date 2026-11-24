@@ -3,6 +3,7 @@ using CryptoBase.Kems.Hybrid;
 using CryptoBase.Kems.MLKem;
 using CryptoBase.KeyAgreements.Ecdh;
 using CryptoBase.KeyAgreements.Xdh;
+using CryptoBase.Rsa;
 using CryptoBase.SM2;
 using CryptoBase.SM9;
 
@@ -50,6 +51,9 @@ internal static partial class AlgorithmCatalog
 		[
 			Encryption("sm2-encrypt", typeof(SM2Key), [], static decrypt => new SM2EncryptionWorkload(decrypt), "C1C3C2; 32-byte message"),
 			Encryption("sm9-encrypt", typeof(SM9EncryptionMasterKey), [typeof(SM9EncryptionKey)], static decrypt => new SM9EncryptionWorkload(decrypt), "C1C3C2 with the KDF stream cipher; 32-byte message"),
+			Encryption("rsa-2048-oaep", typeof(RsaKey), [], static decrypt => new RsaOaepWorkload(2048, decrypt), "SHA-256, MGF1 with SHA-256, empty label; fixed built-in key; 32-byte message"),
+			Encryption("rsa-3072-oaep", typeof(RsaKey), [], static decrypt => new RsaOaepWorkload(3072, decrypt), "SHA-256, MGF1 with SHA-256, empty label; fixed built-in key; 32-byte message"),
+			Encryption("rsa-4096-oaep", typeof(RsaKey), [], static decrypt => new RsaOaepWorkload(4096, decrypt), "SHA-256, MGF1 with SHA-256, empty label; fixed built-in key; 32-byte message"),
 			Hpke<DhKemX25519>("hpke-x25519", HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm),
 			Hpke<DhKemP256>("hpke-p256", HpkeKdfId.HkdfSha256, HpkeAeadId.Aes128Gcm),
 			Hpke<DhKemP384>("hpke-p384", HpkeKdfId.HkdfSha384, HpkeAeadId.Aes256Gcm),

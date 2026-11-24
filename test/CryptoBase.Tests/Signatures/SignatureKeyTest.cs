@@ -3,10 +3,10 @@
 using CryptoBase.Abstractions.Signatures;
 using CryptoBase.Signatures;
 using CryptoBase.Signatures.Ecdsa;
-using CryptoBase.Signatures.Rsa;
+using CryptoBase.Rsa;
 using CryptoBase.SM2;
 using CryptoBase.Tests.Signatures.Ecdsa;
-using CryptoBase.Tests.Signatures.Rsa;
+using CryptoBase.Tests.Rsa;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using static CryptoBase.Tests.Signatures.SignatureTestUtils;
