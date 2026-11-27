@@ -1,4 +1,3 @@
-using CryptoBase.Hashes;
 using CryptoBase.Hashes.SM3;
 
 namespace CryptoBase.Kdf;
@@ -23,11 +22,11 @@ internal static class SM3KeyConfirmation
 	// SM3(tag ‖ part ‖ inner), Hv in SM9.
 	internal static void Compute(byte tag, ReadOnlySpan<byte> part, ReadOnlySpan<byte> inner, Span<byte> destination)
 	{
-		SM3Core hash = HashCore.Create<SM3Core>();
-		HashCore.Append(ref hash, new ReadOnlySpan<byte>(in tag));
-		HashCore.Append(ref hash, part);
-		HashCore.Append(ref hash, inner);
-		HashCore.Finalize(ref hash, destination);
+		SM3Core.Initialize(out SM3Core hash);
+		hash.Append(new ReadOnlySpan<byte>(in tag));
+		hash.Append(part);
+		hash.Append(inner);
+		hash.Finalize(destination);
 		hash.ZeroMemory();
 	}
 }

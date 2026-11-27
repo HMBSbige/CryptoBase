@@ -12,7 +12,10 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 	private TCore _state;
 	private bool _disposed;
 
-	private HashAlgorithm() { }
+	private HashAlgorithm()
+	{
+		TCore.Initialize(out _state);
+	}
 
 	/// <inheritdoc />
 	public static int HashLength => TCore.HashLength;
@@ -20,7 +23,7 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 	/// <inheritdoc />
 	public static HashAlgorithm<TCore> Create()
 	{
-		return new HashAlgorithm<TCore> { _state = TCore.Create() };
+		return new HashAlgorithm<TCore>();
 	}
 
 	/// <inheritdoc />
@@ -40,7 +43,7 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 			return TCore.HashLength;
 		}
 
-		TCore state = TCore.Create();
+		TCore.Initialize(out TCore state);
 		state.Append(source);
 		state.Finalize(destination);
 		return TCore.HashLength;
@@ -96,7 +99,7 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
 
-		_state = TCore.Create();
+		TCore.Initialize(out _state);
 	}
 
 	/// <inheritdoc />
@@ -119,7 +122,7 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLength, nameof(destination));
 
 		_state.Finalize(destination);
-		_state = TCore.Create();
+		TCore.Initialize(out _state);
 		return TCore.HashLength;
 	}
 

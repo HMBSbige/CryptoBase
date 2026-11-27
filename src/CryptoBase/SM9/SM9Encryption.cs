@@ -1,6 +1,5 @@
 using CryptoBase.EllipticCurves;
 using CryptoBase.EllipticCurves.SM9;
-using CryptoBase.Hashes;
 using CryptoBase.Hashes.SM3;
 using CryptoBase.Kdf;
 
@@ -204,10 +203,10 @@ internal static class SM9Encryption
 	// MAC(K2, Z) = SM3(Z ‖ K2) of Sec. 5.4.5.
 	private static void Mac(ReadOnlySpan<byte> message, ReadOnlySpan<byte> key, Span<byte> destination)
 	{
-		SM3Core hash = HashCore.Create<SM3Core>();
-		HashCore.Append(ref hash, message);
-		HashCore.Append(ref hash, key);
-		HashCore.Finalize(ref hash, destination);
+		SM3Core.Initialize(out SM3Core hash);
+		hash.Append(message);
+		hash.Append(key);
+		hash.Finalize(destination);
 		hash.ZeroMemory();
 	}
 }

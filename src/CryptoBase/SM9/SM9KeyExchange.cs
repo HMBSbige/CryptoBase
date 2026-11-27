@@ -1,6 +1,5 @@
 using CryptoBase.EllipticCurves;
 using CryptoBase.EllipticCurves.SM9;
-using CryptoBase.Hashes;
 using CryptoBase.Hashes.SM3;
 using CryptoBase.Kdf;
 
@@ -245,13 +244,13 @@ public sealed class SM9KeyExchange : IDisposable
 			if (!confirmation.IsEmpty)
 			{
 				// Hv(g2 ‖ g3 ‖ ID_A ‖ ID_B ‖ R_A ‖ R_B).
-				hash = HashCore.Create<SM3Core>();
-				HashCore.Append(ref hash, powers.Span.Slice(SM9GT.EncodedLength));
-				HashCore.Append(ref hash, idA);
-				HashCore.Append(ref hash, idB);
-				HashCore.Append(ref hash, ephemeralA);
-				HashCore.Append(ref hash, ephemeralB);
-				HashCore.Finalize(ref hash, inner.Span);
+				SM3Core.Initialize(out hash);
+				hash.Append(powers.Span.Slice(SM9GT.EncodedLength));
+				hash.Append(idA);
+				hash.Append(idB);
+				hash.Append(ephemeralA);
+				hash.Append(ephemeralB);
+				hash.Finalize(inner.Span);
 				// S_B and S_1 take 0x82, S_A and S_2 take 0x83.
 				SM3KeyConfirmation.Compute(initiator ? (byte)0x83 : (byte)0x82, g1, inner.Span, confirmation);
 				SM3KeyConfirmation.Compute(initiator ? (byte)0x82 : (byte)0x83, g1, inner.Span, peerConfirmation);

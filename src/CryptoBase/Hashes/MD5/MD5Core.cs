@@ -61,19 +61,18 @@ public partial struct MD5Core : IHmacHashCore<MD5Core>
 	/// <inheritdoc />
 	public static int HmacBlockSize => BlockSizeInBytes;
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	static MD5Core IHashCore<MD5Core>.Create()
+	public static void Initialize(out MD5Core core)
 	{
-		Unsafe.SkipInit(out MD5Core hashAlgorithm);
-		hashAlgorithm._a = 0x67452301U;
-		hashAlgorithm._b = 0xEFCDAB89U;
-		hashAlgorithm._c = 0x98BADCFEU;
-		hashAlgorithm._d = 0x10325476U;
-		hashAlgorithm._byteCount = 0;
-		return hashAlgorithm;
+		Unsafe.SkipInit(out core);
+		core._byteCount = 0;
+		ReadOnlySpan<uint> initialState = [0x67452301U, 0xEFCDAB89U, 0x98BADCFEU, 0x10325476U];
+		initialState.CopyTo(MemoryMarshal.CreateSpan(ref core._a, 4));
 	}
 
-	void IIncrementalHashCore.Append(ReadOnlySpan<byte> source)
+	/// <inheritdoc />
+	public void Append(ReadOnlySpan<byte> source)
 	{
 		int bufferedLength = (int)(_byteCount & BlockSizeInBytes - 1);
 		_byteCount += (uint)source.Length;
@@ -115,7 +114,8 @@ public partial struct MD5Core : IHmacHashCore<MD5Core>
 		}
 	}
 
-	void IIncrementalHashCore.Finalize(Span<byte> destination)
+	/// <inheritdoc />
+	public void Finalize(Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLength, nameof(destination));
 		Finalize(ref MemoryMarshal.GetReference(destination));

@@ -1,4 +1,3 @@
-using CryptoBase.Hashes;
 using CryptoBase.Hashes.SM3;
 
 namespace CryptoBase.Kdf;
@@ -31,12 +30,12 @@ internal struct SM3KdfState
 
 	internal void Initialize()
 	{
-		_hash = HashCore.Create<SM3Core>();
+		SM3Core.Initialize(out _hash);
 	}
 
 	internal void Append(ReadOnlySpan<byte> z)
 	{
-		HashCore.Append(ref _hash, z);
+		_hash.Append(z);
 	}
 
 	// Writes block counter, from 1, to the first BlockLength bytes of destination.
@@ -47,8 +46,8 @@ internal struct SM3KdfState
 		SM3Core block = _hash;
 		Span<byte> encodedCounter = stackalloc byte[sizeof(uint)];
 		BinaryPrimitives.WriteUInt32BigEndian(encodedCounter, counter);
-		HashCore.Append(ref block, encodedCounter);
-		HashCore.Finalize(ref block, destination);
+		block.Append(encodedCounter);
+		block.Finalize(destination);
 		block.ZeroMemory();
 	}
 

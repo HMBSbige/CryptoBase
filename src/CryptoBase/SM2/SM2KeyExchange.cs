@@ -1,5 +1,4 @@
 using CryptoBase.EllipticCurves;
-using CryptoBase.Hashes;
 using CryptoBase.Hashes.SM3;
 using CryptoBase.Kdf;
 
@@ -248,13 +247,13 @@ public sealed class SM2KeyExchange : IDisposable
 				// SM3(x ‖ Z_A ‖ Z_B ‖ x1 ‖ y1 ‖ x2 ‖ y2), with (x1, y1) of the initiator and (x2, y2) of the responder.
 				ReadOnlySpan<byte> ownEphemeral = _ephemeralPublicKey;
 				ReadOnlySpan<byte> peerCoordinates = peerEphemeral.Slice(1);
-				hash = HashCore.Create<SM3Core>();
-				HashCore.Append(ref hash, x);
-				HashCore.Append(ref hash, zA);
-				HashCore.Append(ref hash, zB);
-				HashCore.Append(ref hash, initiator ? ownEphemeral : peerCoordinates);
-				HashCore.Append(ref hash, initiator ? peerCoordinates : ownEphemeral);
-				HashCore.Finalize(ref hash, inner.Span);
+				SM3Core.Initialize(out hash);
+				hash.Append(x);
+				hash.Append(zA);
+				hash.Append(zB);
+				hash.Append(initiator ? ownEphemeral : peerCoordinates);
+				hash.Append(initiator ? peerCoordinates : ownEphemeral);
+				hash.Finalize(inner.Span);
 				// S_B and S_1 take 0x02, S_A and S_2 take 0x03.
 				SM3KeyConfirmation.Compute(initiator ? (byte)0x03 : (byte)0x02, y, inner.Span, confirmation);
 				SM3KeyConfirmation.Compute(initiator ? (byte)0x02 : (byte)0x03, y, inner.Span, peerConfirmation);

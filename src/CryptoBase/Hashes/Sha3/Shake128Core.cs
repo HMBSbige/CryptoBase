@@ -5,13 +5,14 @@ namespace CryptoBase.Hashes.Sha3;
 /// </summary>
 /// <remarks>
 /// Computes SHAKE128 as specified in FIPS 202, Sec. 6.2.
-/// Use it through <see cref="Xof{TCore}" />, whose output length is the destination length; collision resistance reaches its full 128 bits from 32 bytes of output, per FIPS 202, Table 4.
+/// Each read fills its destination. Collision resistance reaches its full 128 bits from 32 bytes of output, per FIPS 202, Table 4.
 /// </remarks>
 public struct Shake128Core : IXofCore<Shake128Core>
 {
 	private KeccakSponge<KeccakRate168> _sponge;
 
-	static Shake128Core IXofCore<Shake128Core>.Create()
+	/// <inheritdoc />
+	public static Shake128Core Create()
 	{
 		return default;
 	}
@@ -23,13 +24,15 @@ public struct Shake128Core : IXofCore<Shake128Core>
 		KeccakSponge<KeccakRate168>.HashData(source, destination, KeccakDomainSeparator.Shake);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	void IXofCore<Shake128Core>.Append(ReadOnlySpan<byte> source)
+	public void Append(ReadOnlySpan<byte> source)
 	{
 		_sponge.Absorb(source);
 	}
 
-	void IXofCore<Shake128Core>.Read(Span<byte> destination)
+	/// <inheritdoc />
+	public void Read(Span<byte> destination)
 	{
 		if (!_sponge.IsSqueezing)
 		{

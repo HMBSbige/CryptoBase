@@ -100,8 +100,8 @@ public class SM3LanesTest
 		foreach (int prefixLength in Enumerable.Range(0, 128).Append(703))
 		{
 			byte[] prefix = CreateDeterministicSource(prefixLength);
-			SM3Core core = HashCore.Create<SM3Core>();
-			HashCore.Append(ref core, prefix);
+			SM3Core.Initialize(out SM3Core core);
+			core.Append(prefix);
 
 			foreach (uint counter in Counters.Append(uint.MaxValue - (uint)maxBlocks + 1))
 			{

@@ -41,17 +41,10 @@ internal partial struct Sha512State : ISha2SoftwareRounds<ulong>
 	];
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal void Reset(ulong h0, ulong h1, ulong h2, ulong h3, ulong h4, ulong h5, ulong h6, ulong h7)
+	internal void Reset(ReadOnlySpan<ulong> initialState)
 	{
 		_byteCount = 0;
-		_h0 = h0;
-		_h1 = h1;
-		_h2 = h2;
-		_h3 = h3;
-		_h4 = h4;
-		_h5 = h5;
-		_h6 = h6;
-		_h7 = h7;
+		initialState.CopyTo(MemoryMarshal.CreateSpan(ref _h0, 8));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

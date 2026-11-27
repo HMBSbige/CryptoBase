@@ -19,9 +19,10 @@ public struct Sha3_384Core : IHmacHashCore<Sha3_384Core>
 	/// <inheritdoc />
 	public static int HmacBlockSize => KeccakRate104.RateInBytes;
 
-	static Sha3_384Core IHashCore<Sha3_384Core>.Create()
+	/// <inheritdoc />
+	public static void Initialize(out Sha3_384Core core)
 	{
-		return default;
+		core = default;
 	}
 
 	// The one-shot computation for HashAlgorithm<TCore>.HashData, whose destination is already checked.
@@ -31,13 +32,15 @@ public struct Sha3_384Core : IHmacHashCore<Sha3_384Core>
 		KeccakSponge<KeccakRate104>.HashData(source, destination.Slice(0, HashSizeInBytes), KeccakDomainSeparator.Sha3);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	void IIncrementalHashCore.Append(ReadOnlySpan<byte> source)
+	public void Append(ReadOnlySpan<byte> source)
 	{
 		_sponge.Absorb(source);
 	}
 
-	void IIncrementalHashCore.Finalize(Span<byte> destination)
+	/// <inheritdoc />
+	public void Finalize(Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLength, nameof(destination));
 		_sponge.Pad(KeccakDomainSeparator.Sha3);

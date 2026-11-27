@@ -4,7 +4,7 @@ namespace CryptoBase.Abstractions.Hashes;
 /// Defines a hash core usable with HMAC.
 /// </summary>
 /// <typeparam name="TSelf">The implementing core type.</typeparam>
-public interface IHmacHashCore<out TSelf> : IHashCore<TSelf> where TSelf : unmanaged, IHmacHashCore<TSelf>
+public interface IHmacHashCore<TSelf> : IHashCore<TSelf> where TSelf : unmanaged, IHmacHashCore<TSelf>
 {
 	/// <summary>
 	/// Gets the HMAC input block size, in bytes.

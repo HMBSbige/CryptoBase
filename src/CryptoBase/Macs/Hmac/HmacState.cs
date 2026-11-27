@@ -196,11 +196,11 @@ internal struct HmacState<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 	private static void InitializeSeeds(Span<byte> keyBlock, out TCore innerSeed, out TCore outerSeed)
 	{
 		XorPad(keyBlock, Ipad);
-		innerSeed = TCore.Create();
+		TCore.Initialize(out innerSeed);
 		innerSeed.Append(keyBlock);
 
 		XorPad(keyBlock, Ipad ^ Opad);
-		outerSeed = TCore.Create();
+		TCore.Initialize(out outerSeed);
 		outerSeed.Append(keyBlock);
 	}
 
@@ -224,7 +224,7 @@ internal struct HmacState<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 
 			try
 			{
-				hash = TCore.Create();
+				TCore.Initialize(out hash);
 				hash.Append(key);
 				hash.Finalize(keyBlock);
 				normalizedKeyLength = TCore.HashLength;
@@ -247,11 +247,11 @@ internal struct HmacState<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 	private static void InitializeSeeds(ReadOnlySpan<byte> key, Span<byte> keyBlock, out TCore innerSeed, out TCore outerSeed)
 	{
 		WritePaddedKey(key, keyBlock, Ipad);
-		innerSeed = TCore.Create();
+		TCore.Initialize(out innerSeed);
 		innerSeed.Append(keyBlock);
 
 		WritePaddedKey(key, keyBlock, Opad);
-		outerSeed = TCore.Create();
+		TCore.Initialize(out outerSeed);
 		outerSeed.Append(keyBlock);
 	}
 
@@ -267,7 +267,7 @@ internal struct HmacState<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 
 		try
 		{
-			hash = TCore.Create();
+			TCore.Initialize(out hash);
 			hash.Append(key);
 			hash.Finalize(hashBuffer);
 			return hashBuffer.Slice(0, TCore.HashLength);

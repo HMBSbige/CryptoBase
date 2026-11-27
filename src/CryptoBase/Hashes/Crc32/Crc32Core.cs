@@ -10,20 +10,23 @@ public struct Crc32Core : IHashCore<Crc32Core>
 	/// <inheritdoc />
 	public static int HashLength => sizeof(uint);
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	static Crc32Core IHashCore<Crc32Core>.Create()
+	public static void Initialize(out Crc32Core core)
 	{
-		return new Crc32Core { _state = Crc32Engine.InitialState };
+		core._state = Crc32Engine.InitialState;
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	void IIncrementalHashCore.Append(ReadOnlySpan<byte> source)
+	public void Append(ReadOnlySpan<byte> source)
 	{
 		_state = Crc32Engine.Update<Crc32Core>(_state, source);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	readonly void IIncrementalHashCore.Finalize(Span<byte> destination)
+	public readonly void Finalize(Span<byte> destination)
 	{
 		Crc32Engine.Finalize(_state, destination);
 	}

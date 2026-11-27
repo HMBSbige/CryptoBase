@@ -243,16 +243,11 @@ internal struct Ed448Key
 
 	// SHAKE256(dom4(F, C) ‖ first ‖ second ‖ message, 114), where header is F ‖ OLEN(C), or without dom4 for an empty header, as in the expansion of the seed.
 	// The state, which may hold the prefix or the seed, is erased.
+	// Inlining Hash twice can prevent the JIT from inlining MultiplyAdd into SignCore.
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void Hash(ReadOnlySpan<byte> header, ReadOnlySpan<byte> context, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> message, Span<byte> destination)
 	{
-		Hash<Shake256Core>(header, context, first, second, message, destination);
-	}
-
-	// Generic so that the explicit members of the core are called without boxing.
-	private static void Hash<TXof>(ReadOnlySpan<byte> header, ReadOnlySpan<byte> context, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> message, Span<byte> destination)
-		where TXof : unmanaged, IXofCore<TXof>
-	{
-		TXof state = TXof.Create();
+		Shake256Core state = Shake256Core.Create();
 
 		if (!header.IsEmpty)
 		{

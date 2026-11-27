@@ -1,5 +1,4 @@
 using CryptoBase.EllipticCurves;
-using CryptoBase.Hashes;
 using CryptoBase.Hashes.SM3;
 using CryptoBase.Kdf;
 using CryptoBase.Signatures;
@@ -201,12 +200,12 @@ internal struct SM2KeyState
 
 		Span<byte> length = stackalloc byte[sizeof(ushort)];
 		BinaryPrimitives.WriteUInt16BigEndian(length, (ushort)(8 * id.Length));
-		SM3Core hash = HashCore.Create<SM3Core>();
-		HashCore.Append(ref hash, length);
-		HashCore.Append(ref hash, id);
-		HashCore.Append(ref hash, CurveParameters);
-		HashCore.Append(ref hash, publicKey.Slice(1));
-		HashCore.Finalize(ref hash, destination);
+		SM3Core.Initialize(out SM3Core hash);
+		hash.Append(length);
+		hash.Append(id);
+		hash.Append(CurveParameters);
+		hash.Append(publicKey.Slice(1));
+		hash.Finalize(destination);
 	}
 
 	// As below, with fresh system randomness as the additional data.
@@ -408,11 +407,11 @@ internal struct SM2KeyState
 			ulong keyStream = kdf.Xor(1, c2, plaintext.Span);
 
 			// B6: u = SM3(x2 ‖ M' ‖ y2).
-			digest = HashCore.Create<SM3Core>();
-			HashCore.Append(ref digest, x);
-			HashCore.Append(ref digest, plaintext.Span);
-			HashCore.Append(ref digest, y);
-			HashCore.Finalize(ref digest, hash);
+			SM3Core.Initialize(out digest);
+			digest.Append(x);
+			digest.Append(plaintext.Span);
+			digest.Append(y);
+			digest.Finalize(hash);
 
 			if (LimbArithmetic.ZeroMask(keyStream) is not 0 | !FixedTime.Equals(hash, c3))
 			{
@@ -504,10 +503,10 @@ internal struct SM2KeyState
 	{
 		Span<byte> z = stackalloc byte[HashLength];
 		ComputeZ(id, z);
-		SM3Core hash = HashCore.Create<SM3Core>();
-		HashCore.Append(ref hash, z);
-		HashCore.Append(ref hash, message);
-		HashCore.Finalize(ref hash, destination);
+		SM3Core.Initialize(out SM3Core hash);
+		hash.Append(z);
+		hash.Append(message);
+		hash.Finalize(destination);
 	}
 
 	// A1 to A5 of GB/T 32918.4-2016, Sec. 6.1: draws k until t = KDF(x2 ‖ y2, length) is not all zero, and leaves C1 = k·G in c1, k·P = (x2, y2) encoded in point, the KDF over x2 ‖ y2 in kdf and block 1 of t in first;
@@ -590,11 +589,11 @@ internal struct SM2KeyState
 	private static void Seal(ReadOnlySpan<byte> plaintext, in SM3KdfState kdf, ReadOnlySpan<byte> point, ReadOnlySpan<byte> first, Span<byte> c3, Span<byte> c2)
 	{
 		int length = plaintext.Length;
-		SM3Core hash = HashCore.Create<SM3Core>();
-		HashCore.Append(ref hash, point.Slice(1, HashLength));
-		HashCore.Append(ref hash, plaintext);
-		HashCore.Append(ref hash, point.Slice(1 + HashLength, HashLength));
-		HashCore.Finalize(ref hash, c3);
+		SM3Core.Initialize(out SM3Core hash);
+		hash.Append(point.Slice(1, HashLength));
+		hash.Append(plaintext);
+		hash.Append(point.Slice(1 + HashLength, HashLength));
+		hash.Finalize(c3);
 		hash.ZeroMemory();
 		FastUtils.Xor(first, plaintext, c2, Math.Min(SM3KdfState.BlockLength, length));
 

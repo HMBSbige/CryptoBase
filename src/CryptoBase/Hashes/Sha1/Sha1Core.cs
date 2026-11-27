@@ -14,20 +14,12 @@ public partial struct Sha1Core : IHmacHashCore<Sha1Core>
 	private const uint MajorityConstant = 0x8F1BBCDCU;
 	private const uint ParityConstant2 = 0xCA62C1D6U;
 
-#if !NET11_0_OR_GREATER
-	// Before .NET 11 the count takes a store of its own wherever it sits.
 	private ulong _byteCount;
-#endif
 	private uint _h0;
 	private uint _h1;
 	private uint _h2;
 	private uint _h3;
 	private uint _h4;
-#if NET11_0_OR_GREATER
-	// On Arm64, .NET 11 merges the constant stores of Create into vector stores from the start of the state.
-	// After the words, the count, which Append updates right away, shares none of those stores with them, which makes short messages faster.
-	private ulong _byteCount;
-#endif
 	private InlineArray64<byte> _buffer;
 
 	private const int BlockSizeInBytes = 64;
@@ -38,20 +30,18 @@ public partial struct Sha1Core : IHmacHashCore<Sha1Core>
 	/// <inheritdoc />
 	public static int HmacBlockSize => BlockSizeInBytes;
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	static Sha1Core IHashCore<Sha1Core>.Create()
+	public static void Initialize(out Sha1Core core)
 	{
-		Unsafe.SkipInit(out Sha1Core hashAlgorithm);
-		hashAlgorithm._byteCount = 0;
-		hashAlgorithm._h0 = 0x67452301U;
-		hashAlgorithm._h1 = 0xEFCDAB89U;
-		hashAlgorithm._h2 = 0x98BADCFEU;
-		hashAlgorithm._h3 = 0x10325476U;
-		hashAlgorithm._h4 = 0xC3D2E1F0U;
-		return hashAlgorithm;
+		Unsafe.SkipInit(out core);
+		core._byteCount = 0;
+		ReadOnlySpan<uint> initialState = [0x67452301U, 0xEFCDAB89U, 0x98BADCFEU, 0x10325476U, 0xC3D2E1F0U];
+		initialState.CopyTo(MemoryMarshal.CreateSpan(ref core._h0, 5));
 	}
 
-	void IIncrementalHashCore.Append(ReadOnlySpan<byte> source)
+	/// <inheritdoc />
+	public void Append(ReadOnlySpan<byte> source)
 	{
 		int bufferedLength = (int)(_byteCount & BlockSizeInBytes - 1);
 		_byteCount += (uint)source.Length;
@@ -92,13 +82,15 @@ public partial struct Sha1Core : IHmacHashCore<Sha1Core>
 		}
 	}
 
-	void IIncrementalHashCore.Finalize(Span<byte> destination)
+	// Keep Finalize small so the JIT can inline it and reuse the caller's length check.
+	/// <inheritdoc />
+	public void Finalize(Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLength, nameof(destination));
-		Finalize(destination);
+		FinalizeCore(destination);
 	}
 
-	private void Finalize(Span<byte> destination)
+	private void FinalizeCore(Span<byte> destination)
 	{
 		Debug.Assert(destination.Length >= HashLength);
 

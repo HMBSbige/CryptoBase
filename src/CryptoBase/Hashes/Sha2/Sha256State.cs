@@ -31,17 +31,10 @@ internal partial struct Sha256State : ISha2SoftwareRounds<uint>
 	];
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	internal void Reset(uint h0, uint h1, uint h2, uint h3, uint h4, uint h5, uint h6, uint h7)
+	internal void Reset(ReadOnlySpan<uint> initialState)
 	{
 		_byteCount = 0;
-		_h0 = h0;
-		_h1 = h1;
-		_h2 = h2;
-		_h3 = h3;
-		_h4 = h4;
-		_h5 = h5;
-		_h6 = h6;
-		_h7 = h7;
+		initialState.CopyTo(MemoryMarshal.CreateSpan(ref _h0, 8));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

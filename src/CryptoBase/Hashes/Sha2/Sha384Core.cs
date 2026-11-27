@@ -23,21 +23,23 @@ public struct Sha384Core : IHmacHashCore<Sha384Core>
 	/// <inheritdoc />
 	public static int HmacBlockSize => Sha512State.BlockSizeInBytes;
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	static Sha384Core IHashCore<Sha384Core>.Create()
+	public static void Initialize(out Sha384Core core)
 	{
-		Unsafe.SkipInit(out Sha384Core hashAlgorithm);
-		hashAlgorithm._state.Reset(InitialH0, InitialH1, InitialH2, InitialH3, InitialH4, InitialH5, InitialH6, InitialH7);
-		return hashAlgorithm;
+		Unsafe.SkipInit(out core);
+		core._state.Reset([InitialH0, InitialH1, InitialH2, InitialH3, InitialH4, InitialH5, InitialH6, InitialH7]);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	void IIncrementalHashCore.Append(ReadOnlySpan<byte> source)
+	public void Append(ReadOnlySpan<byte> source)
 	{
 		_state.Append(source);
 	}
 
-	void IIncrementalHashCore.Finalize(Span<byte> destination)
+	/// <inheritdoc />
+	public void Finalize(Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLength, nameof(destination));
 		_state.Finalize(destination, HashLength);

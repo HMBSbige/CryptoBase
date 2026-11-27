@@ -9,6 +9,15 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 	private const int LengthOffset = 56;
 	private const int HashSizeInBytes = 32;
 
+	private const uint IV0 = 0x7380166FU;
+	private const uint IV1 = 0x4914B2B9U;
+	private const uint IV2 = 0x172442D7U;
+	private const uint IV3 = 0xDA8A0600U;
+	private const uint IV4 = 0xA96F30BCU;
+	private const uint IV5 = 0x163138AAU;
+	private const uint IV6 = 0xE38DEE4DU;
+	private const uint IV7 = 0xB0FB0E4EU;
+
 	internal static ReadOnlySpan<uint> RoundConstants =>
 	[
 		0x79CC4519U, 0xF3988A32U, 0xE7311465U, 0xCE6228CBU, 0x9CC45197U, 0x3988A32FU, 0x7311465EU, 0xE6228CBCU,
@@ -21,10 +30,7 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 		0x8A7A879DU, 0x14F50F3BU, 0x29EA1E76U, 0x53D43CECU, 0xA7A879D8U, 0x4F50F3B1U, 0x9EA1E762U, 0x3D43CEC5U,
 	];
 
-#if !NET11_0_OR_GREATER
-	// Before .NET 11 the count takes a store of its own wherever it sits.
 	private ulong _byteCount;
-#endif
 	private uint _v0;
 	private uint _v1;
 	private uint _v2;
@@ -33,11 +39,6 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 	private uint _v5;
 	private uint _v6;
 	private uint _v7;
-#if NET11_0_OR_GREATER
-	// On Arm64, .NET 11 merges the constant stores of Create into vector stores from the start of the state.
-	// After the words, the count, which Append updates right away, shares none of those stores with them, which makes short messages faster.
-	private ulong _byteCount;
-#endif
 	private InlineArray64<byte> _buffer;
 
 	private const int BlockSizeInBytes = 64;
@@ -48,23 +49,18 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 	/// <inheritdoc />
 	public static int HmacBlockSize => BlockSizeInBytes;
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	static SM3Core IHashCore<SM3Core>.Create()
+	public static void Initialize(out SM3Core core)
 	{
-		Unsafe.SkipInit(out SM3Core hashAlgorithm);
-		hashAlgorithm._byteCount = 0;
-		hashAlgorithm._v0 = 0x7380166FU;
-		hashAlgorithm._v1 = 0x4914B2B9U;
-		hashAlgorithm._v2 = 0x172442D7U;
-		hashAlgorithm._v3 = 0xDA8A0600U;
-		hashAlgorithm._v4 = 0xA96F30BCU;
-		hashAlgorithm._v5 = 0x163138AAU;
-		hashAlgorithm._v6 = 0xE38DEE4DU;
-		hashAlgorithm._v7 = 0xB0FB0E4EU;
-		return hashAlgorithm;
+		Unsafe.SkipInit(out core);
+		core._byteCount = 0;
+		ReadOnlySpan<uint> initialState = [IV0, IV1, IV2, IV3, IV4, IV5, IV6, IV7];
+		initialState.CopyTo(MemoryMarshal.CreateSpan(ref core._v0, 8));
 	}
 
-	void IIncrementalHashCore.Append(ReadOnlySpan<byte> source)
+	/// <inheritdoc />
+	public void Append(ReadOnlySpan<byte> source)
 	{
 		int bufferedLength = (int)(_byteCount & BlockSizeInBytes - 1);
 		_byteCount += (uint)source.Length;
@@ -106,7 +102,8 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 		}
 	}
 
-	void IIncrementalHashCore.Finalize(Span<byte> destination)
+	/// <inheritdoc />
+	public void Finalize(Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLength, nameof(destination));
 		Finalize(ref this, destination);

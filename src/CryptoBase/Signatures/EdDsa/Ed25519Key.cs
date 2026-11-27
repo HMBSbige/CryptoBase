@@ -242,16 +242,11 @@ internal struct Ed25519Key
 
 	// SHA-512(dom2(F, C) ‖ first ‖ second ‖ message), where header is F ‖ OLEN(C), or empty for Ed25519, whose dom2 is empty.
 	// The state, which may hold the prefix or the seed, is erased.
+	// Inlining Hash twice can prevent the JIT from inlining MultiplyAdd into SignCore.
+	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void Hash(ReadOnlySpan<byte> header, ReadOnlySpan<byte> context, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> message, Span<byte> destination)
 	{
-		Hash<Sha512Core>(header, context, first, second, message, destination);
-	}
-
-	// Generic so that the explicit members of the core are called without boxing.
-	private static void Hash<THash>(ReadOnlySpan<byte> header, ReadOnlySpan<byte> context, ReadOnlySpan<byte> first, ReadOnlySpan<byte> second, ReadOnlySpan<byte> message, Span<byte> destination)
-		where THash : unmanaged, IHashCore<THash>
-	{
-		THash state = THash.Create();
+		Sha512Core.Initialize(out Sha512Core state);
 
 		if (!header.IsEmpty)
 		{

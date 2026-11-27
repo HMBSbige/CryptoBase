@@ -152,7 +152,7 @@ internal static class RsaPadding
 		int hashLength = THash.HashLength;
 		Span<byte> counterBytes = stackalloc byte[sizeof(uint)];
 		Span<byte> mask = stackalloc byte[MaxHashLength].Slice(0, hashLength);
-		THash prefix = THash.Create();
+		THash.Initialize(out THash prefix);
 		THash core = default;
 		prefix.Append(seed);
 

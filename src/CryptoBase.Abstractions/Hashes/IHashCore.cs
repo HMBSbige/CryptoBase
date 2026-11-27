@@ -4,12 +4,12 @@ namespace CryptoBase.Abstractions.Hashes;
 /// Defines a hash core.
 /// </summary>
 /// <typeparam name="TSelf">The implementing core type.</typeparam>
-public interface IHashCore<out TSelf> : IIncrementalHashCore where TSelf : unmanaged, IHashCore<TSelf>
+public interface IHashCore<TSelf> : IIncrementalHashCore where TSelf : unmanaged, IHashCore<TSelf>
 {
 	/// <summary>
-	/// Creates an initialized core.
+	/// Initializes the supplied storage for a new hash computation.
 	/// </summary>
 	/// <remarks>Must not fail.</remarks>
-	/// <returns>The initialized core.</returns>
-	static abstract TSelf Create();
+	/// <param name="core">The storage in which to initialize the core.</param>
+	static abstract void Initialize(out TSelf core);
 }

@@ -16,15 +16,17 @@ public struct Blake2b256Core : IHmacHashCore<Blake2b256Core>
 	/// <inheritdoc />
 	public static int HmacBlockSize => Blake2bState.BlockSizeInBytes;
 
-	static Blake2b256Core IHashCore<Blake2b256Core>.Create()
+	/// <inheritdoc />
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static void Initialize(out Blake2b256Core core)
 	{
-		Unsafe.SkipInit(out Blake2b256Core hashAlgorithm);
-		hashAlgorithm._state.Initialize(HashSizeInBytes);
-		return hashAlgorithm;
+		Unsafe.SkipInit(out core);
+		core._state.Initialize(HashSizeInBytes);
 	}
 
+	/// <inheritdoc />
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	void IIncrementalHashCore.Append(ReadOnlySpan<byte> source)
+	public void Append(ReadOnlySpan<byte> source)
 	{
 		_state.Append(source);
 	}
@@ -35,7 +37,8 @@ public struct Blake2b256Core : IHmacHashCore<Blake2b256Core>
 		_state.PrecompressBuffer();
 	}
 
-	void IIncrementalHashCore.Finalize(Span<byte> destination)
+	/// <inheritdoc />
+	public void Finalize(Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLength, nameof(destination));
 		_state.Finalize(destination, HashSizeInBytes);
