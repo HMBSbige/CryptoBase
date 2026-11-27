@@ -20,30 +20,48 @@ public sealed partial class Base32Encoding
 	);
 
 	// Groups 0-7 sit in qwords 0, 2, 4, 6, 1, 3, 5, 7 so the in-lane byte unpacks emit chars in source order.
-	private static readonly Vector512<byte> Avx512CharPackIndicesVector = Vector512.Create
+	private static Vector512<byte> Avx512CharPackIndices
+	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		get => Vector512.Create
+		(
+			(byte)4, 3, 2, 1, 0, 40, 40, 40, 24, 23, 22, 21, 20, 40, 40, 40,
+			9, 8, 7, 6, 5, 40, 40, 40, 29, 28, 27, 26, 25, 40, 40, 40,
+			14, 13, 12, 11, 10, 40, 40, 40, 34, 33, 32, 31, 30, 40, 40, 40,
+			19, 18, 17, 16, 15, 40, 40, 40, 39, 38, 37, 36, 35, 40, 40, 40
+		);
+	}
+
+	private static readonly Vector512<byte> Avx512BwPackIndicesVector = Vector512.Create
 	(
 		(ReadOnlySpan<byte>)
 		[
-			4, 3, 2, 1, 0, 40, 40, 40,
-			24, 23, 22, 21, 20, 40, 40, 40,
-			9, 8, 7, 6, 5, 40, 40, 40,
-			29, 28, 27, 26, 25, 40, 40, 40,
-			14, 13, 12, 11, 10, 40, 40, 40,
-			34, 33, 32, 31, 30, 40, 40, 40,
-			19, 18, 17, 16, 15, 40, 40, 40,
-			39, 38, 37, 36, 35, 40, 40, 40,
+			1, 0, 2, 1, 3, 2, 4, 3, 6, 5, 7, 6, 8, 7, 9, 8,
+			7, 6, 8, 7, 9, 8, 10, 9, 12, 11, 13, 12, 14, 13, 15, 14,
+			1, 0, 2, 1, 3, 2, 4, 3, 6, 5, 7, 6, 8, 7, 9, 8,
+			7, 6, 8, 7, 9, 8, 10, 9, 12, 11, 13, 12, 14, 13, 15, 14,
 		]
 	);
 
-	private static readonly Vector512<byte> Avx512BwPackIndicesVector = Vector512.Create(Vector256.Create((byte)1, 0, 2, 1, 3, 2, 4, 3, 6, 5, 7, 6, 8, 7, 9, 8, 7, 6, 8, 7, 9, 8, 10, 9, 12, 11, 13, 12, 14, 13, 15, 14));
 	private static readonly Vector512<byte> Avx512ShiftControlVector = Vector512.Create(Avx512EncodeShiftControl).AsByte();
-	private static readonly Vector512<byte> Avx512RfcAlphabetVector = Vector512.Create(Vector256.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"u8));
-	private static readonly Vector512<byte> Avx512HexAlphabetVector = Vector512.Create(Vector256.Create("0123456789ABCDEFGHIJKLMNOPQRSTUV"u8));
+	private static readonly Vector256<byte> Avx512RfcAlphabetVector = Vector256.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"u8);
+	private static readonly Vector256<byte> Avx512HexAlphabetVector = Vector256.Create("0123456789ABCDEFGHIJKLMNOPQRSTUV"u8);
 	private static readonly Vector512<byte> Avx512RfcDecodeLowVector = CreateDecodeTable(50, 6, 26);
 	private static readonly Vector512<byte> Avx512RfcDecodeHighVector = CreateDecodeTable(1, 26, 0);
 	private static readonly Vector512<byte> Avx512HexDecodeLowVector = CreateDecodeTable(48, 10, 0);
 	private static readonly Vector512<byte> Avx512HexDecodeHighVector = CreateDecodeTable(1, 22, 10);
-	private static readonly Vector512<byte> Avx512DecodedPackIndicesVector = Vector512.Create(Vector128.Create((byte)2, 1, 0, 5, 4, 10, 9, 8, 13, 12, 0, 0, 0, 0, 0, 0));
+
+	private static readonly Vector512<byte> Avx512DecodedPackIndicesVector = Vector512.Create
+	(
+		(ReadOnlySpan<byte>)
+		[
+			2, 1, 0, 5, 4, 10, 9, 8, 13, 12, 0, 0, 0, 0, 0, 0,
+			2, 1, 0, 5, 4, 10, 9, 8, 13, 12, 0, 0, 0, 0, 0, 0,
+			2, 1, 0, 5, 4, 10, 9, 8, 13, 12, 0, 0, 0, 0, 0, 0,
+			2, 1, 0, 5, 4, 10, 9, 8, 13, 12, 0, 0, 0, 0, 0, 0,
+		]
+	);
+
 	private static readonly Vector256<byte> Avx512VlRfcDecodeLowVector = Avx512RfcDecodeHighVector.GetLower();
 	private static readonly Vector256<byte> Avx512VlRfcDecodeHighVector = Avx512RfcDecodeLowVector.GetUpper();
 	private static readonly Vector256<byte> Avx512VlHexDecodeLowVector = Avx512HexDecodeHighVector.GetLower();
@@ -73,8 +91,6 @@ public sealed partial class Base32Encoding
 	);
 
 	private static readonly Vector256<byte> Avx512Vl256ShiftControlVector = Avx512ShiftControlVector.GetLower();
-	private static readonly Vector256<byte> Avx512VlRfcAlphabetVector = Avx512RfcAlphabetVector.GetLower();
-	private static readonly Vector256<byte> Avx512VlHexAlphabetVector = Avx512HexAlphabetVector.GetLower();
 
 	private static Vector512<byte> CreateDecodeTable(int start, int count, int valueOffset)
 	{
@@ -198,15 +214,16 @@ public sealed partial class Base32Encoding
 	private static int EncodeAvx512Vbmi<T>(ReadOnlySpan<byte> source, Span<T> destination, byte alphabetKind) where T : unmanaged
 	{
 		Vector512<byte> symbolMask = Vector512.Create((byte)SymbolMask);
-		Vector512<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512HexAlphabetVector : Avx512RfcAlphabetVector;
-		return EncodeBlocksAvx512Vbmi(source, destination, symbolMask, alphabet, typeof(T) == typeof(char) ? Avx512CharPackIndicesVector : Avx512PackIndicesVector, Avx512ShiftControlVector);
+		Vector256<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512HexAlphabetVector : Avx512RfcAlphabetVector;
+		return EncodeBlocksAvx512Vbmi(source, destination, symbolMask, alphabet.ToVector512Unsafe(), typeof(T) == typeof(char) ? Avx512CharPackIndices : Avx512PackIndicesVector, Avx512ShiftControlVector);
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private int EncodeAvx512VbmiCustom<T>(ReadOnlySpan<byte> source, Span<T> destination) where T : unmanaged
 	{
 		Vector512<byte> symbolMask = Vector512.Create((byte)SymbolMask);
-		Vector512<byte> alphabet = Vector512.Create(Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet)));
+		// Every lookup masks its index to five bits, so only the low 32 bytes of the alphabet are read.
+		Vector512<byte> alphabet = Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet)).ToVector512Unsafe();
 
 		if (typeof(T) != typeof(char))
 		{
@@ -214,29 +231,15 @@ public sealed partial class Base32Encoding
 		}
 
 		// Local constants avoid the class-initialization slow path and register spills that RyuJIT otherwise emits for static vectors in this instance hot path.
-		// Same layout as Avx512CharPackIndicesVector.
-		Vector512<byte> packIndices = Vector512.Create
-		(
-			Vector256.Create
-			(
-				Vector128.Create((byte)4, 3, 2, 1, 0, 40, 40, 40, 24, 23, 22, 21, 20, 40, 40, 40),
-				Vector128.Create((byte)9, 8, 7, 6, 5, 40, 40, 40, 29, 28, 27, 26, 25, 40, 40, 40)
-			),
-			Vector256.Create
-			(
-				Vector128.Create((byte)14, 13, 12, 11, 10, 40, 40, 40, 34, 33, 32, 31, 30, 40, 40, 40),
-				Vector128.Create((byte)19, 18, 17, 16, 15, 40, 40, 40, 39, 38, 37, 36, 35, 40, 40, 40)
-			)
-		);
 		Vector512<byte> shiftControl = Vector512.Create(Avx512EncodeShiftControl).AsByte();
-		return EncodeBlocksAvx512Vbmi(source, destination, symbolMask, alphabet, packIndices, shiftControl);
+		return EncodeBlocksAvx512Vbmi(source, destination, symbolMask, alphabet, Avx512CharPackIndices, shiftControl);
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static int EncodeAvx512VbmiVl256<T>(ReadOnlySpan<byte> source, Span<T> destination, byte alphabetKind) where T : unmanaged
 	{
 		Vector256<byte> symbolMask = Vector256.Create((byte)SymbolMask);
-		Vector256<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512VlHexAlphabetVector : Avx512VlRfcAlphabetVector;
+		Vector256<byte> alphabet = alphabetKind is Rfc4648HexAlphabetKind ? Avx512HexAlphabetVector : Avx512RfcAlphabetVector;
 		return EncodeBlocksAvx512VbmiVl256(source, destination, symbolMask, alphabet);
 	}
 
