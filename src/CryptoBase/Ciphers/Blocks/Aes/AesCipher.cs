@@ -1,4 +1,5 @@
 using CryptoBase.Ciphers.Modes;
+using AesArm = System.Runtime.Intrinsics.Arm.Aes;
 
 namespace CryptoBase.Ciphers.Blocks.Aes;
 
@@ -95,11 +96,12 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		ObjectDisposedException.ThrowIf(_disposed, this);
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, BlockSize, nameof(source));
 
-		if (AesCipherX86.IsSupported)
+		if (AesCipherX86.IsSupported || AesCipherArm.IsSupported)
 		{
 			CipherBufferGuard.Output(source, destination);
 			Vector128<byte> block = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(source));
-			_state.X86.Encrypt(block).StoreUnsafe(ref MemoryMarshal.GetReference(destination));
+			block = AesCipherX86.IsSupported ? _state.X86.Encrypt(block) : _state.Arm.Encrypt(block);
+			block.StoreUnsafe(ref MemoryMarshal.GetReference(destination));
 			return;
 		}
 
@@ -114,11 +116,18 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 
 		if (AesCipherX86.IsSupported)
 		{
-			AesBlockDriver<AesCipherX86>.EncryptBlocks(ref _state.X86, source, destination);
+			if (source.Length >= 128)
+			{
+				AesBlockDriver<AesCipherX86>.TransformBatches<Encryption>(ref _state.X86, ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length);
+				return;
+			}
+
+			AesBlockDriver<AesCipherX86>.TransformShort<Encryption>(ref _state.X86, source, destination);
 		}
-		else if (AesCipherArm.IsSupported)
+		// The ARM intrinsic folds at import, so on x64 this branch costs no inline budget; the x86 test stays on the property because its intrinsic made .NET 10 stop inlining the four-block path.
+		else if (AesArm.IsSupported)
 		{
-			AesBlockDriver<AesCipherArm>.EncryptBlocks(ref _state.Arm, source, destination);
+			AesBlockDriver<AesCipherArm>.TransformBlocks<Encryption>(ref _state.Arm, source, destination);
 		}
 		else if (AesCipherVpaes.IsSupported)
 		{
@@ -148,11 +157,12 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		ObjectDisposedException.ThrowIf(_disposed, this);
 		ArgumentOutOfRangeException.ThrowIfNotEqual(source.Length, BlockSize, nameof(source));
 
-		if (AesCipherX86.IsSupported)
+		if (AesCipherX86.IsSupported || AesCipherArm.IsSupported)
 		{
 			CipherBufferGuard.Output(source, destination);
 			Vector128<byte> block = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(source));
-			_state.X86.Decrypt(block).StoreUnsafe(ref MemoryMarshal.GetReference(destination));
+			block = AesCipherX86.IsSupported ? _state.X86.Decrypt(block) : _state.Arm.Decrypt(block);
+			block.StoreUnsafe(ref MemoryMarshal.GetReference(destination));
 			return;
 		}
 
@@ -167,11 +177,18 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 
 		if (AesCipherX86.IsSupported)
 		{
-			AesBlockDriver<AesCipherX86>.DecryptBlocks(ref _state.X86, source, destination);
+			if (source.Length >= 128)
+			{
+				AesBlockDriver<AesCipherX86>.TransformBatches<Decryption>(ref _state.X86, ref MemoryMarshal.GetReference(source), ref MemoryMarshal.GetReference(destination), source.Length);
+				return;
+			}
+
+			AesBlockDriver<AesCipherX86>.TransformShort<Decryption>(ref _state.X86, source, destination);
 		}
-		else if (AesCipherArm.IsSupported)
+		// The ARM intrinsic folds at import, so on x64 this branch costs no inline budget; the x86 test stays on the property because its intrinsic made .NET 10 stop inlining the four-block path.
+		else if (AesArm.IsSupported)
 		{
-			AesBlockDriver<AesCipherArm>.DecryptBlocks(ref _state.Arm, source, destination);
+			AesBlockDriver<AesCipherArm>.TransformBlocks<Decryption>(ref _state.Arm, source, destination);
 		}
 		else
 		{
