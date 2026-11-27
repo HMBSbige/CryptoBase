@@ -21,48 +21,59 @@ internal static class Crc32Software
 
 		if (UseX64Braid)
 		{
-			if (source.Length >= FourWayBraidBlockSizeInBytes)
+			if (source.Length >= 2 * FourWayBraidBlockSizeInBytes)
 			{
 				return source.Length >= X64FiveWayBraidThresholdInBytes
 					? UpdateSlicing<X64FiveWayBraid>(state, source, ref tables.Lookup[0], ref tables.Lookup[TableSize], ref tables.FiveWayBraidLookup[0])
 					: UpdateSlicing<FourWayBraid>(state, source, ref tables.Lookup[0], ref tables.Lookup[TableSize], ref tables.FourWayBraidLookup[0]);
 			}
 		}
-		else if (source.Length >= FiveWayBraidBlockSizeInBytes)
+		else if (source.Length >= 2 * FiveWayBraidBlockSizeInBytes)
 		{
 			return UpdateSlicing<FiveWayBraid>(state, source, ref tables.Lookup[0], ref tables.Lookup[TableSize], ref tables.FiveWayBraidLookup[0]);
 		}
 
-		return UpdateBytes(state, source, ref tables.Lookup[0]);
+		return UpdateShort<TAlgorithm>(state, source);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static uint UpdateBytes(uint state, ReadOnlySpan<byte> source, ref uint lookup)
+	internal static uint UpdateShort<TAlgorithm>(uint state, ReadOnlySpan<byte> source) where TAlgorithm : unmanaged
 	{
+		ref uint lookup = ref Crc32SoftwareTables<TAlgorithm>.Tables.Lookup[0];
+		ref uint slicingLookup = ref Unsafe.Add(ref lookup, TableSize);
 		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		int length = source.Length;
 
-		while (length >= sizeof(ulong))
+		if (length < sizeof(ushort))
 		{
-			state = UpdateByte(state, sourceRef, ref lookup);
-			state = UpdateByte(state, Unsafe.Add(ref sourceRef, 1), ref lookup);
-			state = UpdateByte(state, Unsafe.Add(ref sourceRef, 2), ref lookup);
-			state = UpdateByte(state, Unsafe.Add(ref sourceRef, 3), ref lookup);
-			state = UpdateByte(state, Unsafe.Add(ref sourceRef, 4), ref lookup);
-			state = UpdateByte(state, Unsafe.Add(ref sourceRef, 5), ref lookup);
-			state = UpdateByte(state, Unsafe.Add(ref sourceRef, 6), ref lookup);
-			state = UpdateByte(state, Unsafe.Add(ref sourceRef, 7), ref lookup);
-			sourceRef = ref Unsafe.Add(ref sourceRef, sizeof(ulong));
-			length -= sizeof(ulong);
+			return length == 0 ? state : UpdateByte(state, sourceRef, ref lookup);
 		}
 
-		if ((length & sizeof(uint)) is not 0)
+		if (length >= sizeof(uint))
 		{
-			state = UpdateByte(state, sourceRef, ref lookup);
-			state = UpdateByte(state, Unsafe.Add(ref sourceRef, 1), ref lookup);
-			state = UpdateByte(state, Unsafe.Add(ref sourceRef, 2), ref lookup);
-			state = UpdateByte(state, Unsafe.Add(ref sourceRef, 3), ref lookup);
-			sourceRef = ref Unsafe.Add(ref sourceRef, sizeof(uint));
+			while (length >= sizeof(ulong))
+			{
+				ulong word = Unsafe.ReadUnaligned<ulong>(ref sourceRef);
+				if (!BitConverter.IsLittleEndian)
+				{
+					word = BinaryPrimitives.ReverseEndianness(word);
+				}
+
+				state = UpdateWord(word, state, ref lookup, ref slicingLookup);
+				sourceRef = ref Unsafe.Add(ref sourceRef, sizeof(ulong));
+				length -= sizeof(ulong);
+			}
+
+			if ((length & sizeof(uint)) is not 0)
+			{
+				uint word = Unsafe.ReadUnaligned<uint>(ref sourceRef);
+				state ^= BitConverter.IsLittleEndian ? word : BinaryPrimitives.ReverseEndianness(word);
+				state = Slice(ref slicingLookup, 2, (byte)state)
+						^ Slice(ref slicingLookup, 1, (byte)(state >> 8))
+						^ Unsafe.Add(ref slicingLookup, (byte)(state >> 16))
+						^ Unsafe.Add(ref lookup, state >> 24);
+				sourceRef = ref Unsafe.Add(ref sourceRef, sizeof(uint));
+			}
 		}
 
 		if ((length & sizeof(ushort)) is not 0)
@@ -85,7 +96,7 @@ internal static class Crc32Software
 	{
 		bool useFourWayBraid = typeof(TMode) == typeof(FourWayBraid);
 		int braidBlockSize = useFourWayBraid ? FourWayBraidBlockSizeInBytes : FiveWayBraidBlockSizeInBytes;
-		Debug.Assert(source.Length >= braidBlockSize);
+		Debug.Assert(source.Length >= 2 * braidBlockSize);
 
 		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		ref uint braidLookup1 = ref Unsafe.Add(ref braidLookup, 1 * TableSize);
@@ -97,61 +108,59 @@ internal static class Crc32Software
 		ref uint braidLookup7 = ref Unsafe.Add(ref braidLookup, 7 * TableSize);
 		int length = source.Length;
 
-		if (length >= 2 * braidBlockSize)
+		int blockCount = (int)((uint)length / (uint)braidBlockSize);
+		int braidedLength = blockCount * braidBlockSize;
+		ulong crc0 = state;
+		ulong crc1 = 0;
+		ulong crc2 = 0;
+		ulong crc3 = 0;
+		ulong crc4 = 0;
+
+		int blocksRemaining = blockCount - 1;
+		do
 		{
-			int blockCount = length / braidBlockSize;
-			int braidedLength = blockCount * braidBlockSize;
-			ulong crc0 = state;
-			ulong crc1 = 0;
-			ulong crc2 = 0;
-			ulong crc3 = 0;
-			ulong crc4 = 0;
-
-			for (int block = 1; block < blockCount; ++block)
-			{
-				ulong word0 = Unsafe.ReadUnaligned<ulong>(ref sourceRef) ^ crc0;
-				ulong word1 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 8)) ^ crc1;
-				ulong word2 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 16)) ^ crc2;
-				ulong word3 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 24)) ^ crc3;
-				ulong word4 = useFourWayBraid ? 0 : Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 32)) ^ crc4;
-				crc0 = Unsafe.Add(ref braidLookup, (byte)word0);
-				crc1 = Unsafe.Add(ref braidLookup, (byte)word1);
-				crc2 = Unsafe.Add(ref braidLookup, (byte)word2);
-				crc3 = Unsafe.Add(ref braidLookup, (byte)word3);
-
-				if (!useFourWayBraid)
-				{
-					crc4 = Unsafe.Add(ref braidLookup, (byte)word4);
-				}
-
-				XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (byte)(word0 >> 8), (byte)(word1 >> 8), (byte)(word2 >> 8), (byte)(word3 >> 8), (byte)(word4 >> 8), ref braidLookup, ref braidLookup1, 1 * TableSize * sizeof(uint));
-				XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (byte)(word0 >> 16), (byte)(word1 >> 16), (byte)(word2 >> 16), (byte)(word3 >> 16), (byte)(word4 >> 16), ref braidLookup, ref braidLookup2, 2 * TableSize * sizeof(uint));
-				XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (int)word0 >>> 24, (int)word1 >>> 24, (int)word2 >>> 24, (int)word3 >>> 24, (int)word4 >>> 24, ref braidLookup, ref braidLookup3, 3 * TableSize * sizeof(uint));
-				XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (byte)(word0 >> 32), (byte)(word1 >> 32), (byte)(word2 >> 32), (byte)(word3 >> 32), (byte)(word4 >> 32), ref braidLookup, ref braidLookup4, 4 * TableSize * sizeof(uint));
-				XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (byte)(word0 >> 40), (byte)(word1 >> 40), (byte)(word2 >> 40), (byte)(word3 >> 40), (byte)(word4 >> 40), ref braidLookup, ref braidLookup5, 5 * TableSize * sizeof(uint));
-				XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (byte)(word0 >> 48), (byte)(word1 >> 48), (byte)(word2 >> 48), (byte)(word3 >> 48), (byte)(word4 >> 48), ref braidLookup, ref braidLookup6, 6 * TableSize * sizeof(uint));
-				XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (int)(word0 >> 56), (int)(word1 >> 56), (int)(word2 >> 56), (int)(word3 >> 56), (int)(word4 >> 56), ref braidLookup, ref braidLookup7, 7 * TableSize * sizeof(uint));
-				sourceRef = ref Unsafe.Add(ref sourceRef, braidBlockSize);
-			}
-
-			uint combined = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref sourceRef) ^ crc0, ref lookup, ref slicingLookup);
-			combined = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 8)) ^ crc1 ^ combined, ref lookup, ref slicingLookup);
-			combined = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 16)) ^ crc2 ^ combined, ref lookup, ref slicingLookup);
-
-			state = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 24)) ^ crc3 ^ combined, ref lookup, ref slicingLookup);
+			ulong word0 = Unsafe.ReadUnaligned<ulong>(ref sourceRef) ^ crc0;
+			ulong word1 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 8)) ^ crc1;
+			ulong word2 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 16)) ^ crc2;
+			ulong word3 = Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 24)) ^ crc3;
+			ulong word4 = useFourWayBraid ? 0 : Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 32)) ^ crc4;
+			crc0 = Unsafe.Add(ref braidLookup, (byte)word0);
+			crc1 = Unsafe.Add(ref braidLookup, (byte)word1);
+			crc2 = Unsafe.Add(ref braidLookup, (byte)word2);
+			crc3 = Unsafe.Add(ref braidLookup, (byte)word3);
 
 			if (!useFourWayBraid)
 			{
-				state = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 32)) ^ crc4 ^ state, ref lookup, ref slicingLookup);
+				crc4 = Unsafe.Add(ref braidLookup, (byte)word4);
 			}
 
+			XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (byte)(word0 >> 8), (byte)(word1 >> 8), (byte)(word2 >> 8), (byte)(word3 >> 8), (byte)(word4 >> 8), ref braidLookup, ref braidLookup1, 1 * TableSize * sizeof(uint));
+			XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (byte)(word0 >> 16), (byte)(word1 >> 16), (byte)(word2 >> 16), (byte)(word3 >> 16), (byte)(word4 >> 16), ref braidLookup, ref braidLookup2, 2 * TableSize * sizeof(uint));
+			XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (int)word0 >>> 24, (int)word1 >>> 24, (int)word2 >>> 24, (int)word3 >>> 24, (int)word4 >>> 24, ref braidLookup, ref braidLookup3, 3 * TableSize * sizeof(uint));
+			XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (byte)(word0 >> 32), (byte)(word1 >> 32), (byte)(word2 >> 32), (byte)(word3 >> 32), (byte)(word4 >> 32), ref braidLookup, ref braidLookup4, 4 * TableSize * sizeof(uint));
+			XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (byte)(word0 >> 40), (byte)(word1 >> 40), (byte)(word2 >> 40), (byte)(word3 >> 40), (byte)(word4 >> 40), ref braidLookup, ref braidLookup5, 5 * TableSize * sizeof(uint));
+			XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (byte)(word0 >> 48), (byte)(word1 >> 48), (byte)(word2 >> 48), (byte)(word3 >> 48), (byte)(word4 >> 48), ref braidLookup, ref braidLookup6, 6 * TableSize * sizeof(uint));
+			XorBraidLookups<TMode>(ref crc0, ref crc1, ref crc2, ref crc3, ref crc4, (int)(word0 >> 56), (int)(word1 >> 56), (int)(word2 >> 56), (int)(word3 >> 56), (int)(word4 >> 56), ref braidLookup, ref braidLookup7, 7 * TableSize * sizeof(uint));
 			sourceRef = ref Unsafe.Add(ref sourceRef, braidBlockSize);
-			length -= braidedLength;
+		} while (--blocksRemaining > 0);
+
+		uint combined = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref sourceRef), (uint)crc0, ref lookup, ref slicingLookup);
+		combined = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 8)), (uint)crc1 ^ combined, ref lookup, ref slicingLookup);
+		combined = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 16)), (uint)crc2 ^ combined, ref lookup, ref slicingLookup);
+
+		state = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 24)), (uint)crc3 ^ combined, ref lookup, ref slicingLookup);
+
+		if (!useFourWayBraid)
+		{
+			state = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, 32)), (uint)crc4 ^ state, ref lookup, ref slicingLookup);
 		}
+
+		sourceRef = ref Unsafe.Add(ref sourceRef, braidBlockSize);
+		length -= braidedLength;
 
 		while (length >= sizeof(ulong))
 		{
-			state = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref sourceRef) ^ state, ref lookup, ref slicingLookup);
+			state = UpdateWord(Unsafe.ReadUnaligned<ulong>(ref sourceRef), state, ref lookup, ref slicingLookup);
 			sourceRef = ref Unsafe.Add(ref sourceRef, sizeof(ulong));
 			length -= sizeof(ulong);
 		}
@@ -189,16 +198,27 @@ internal static class Crc32Software
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static uint UpdateWord(ulong word, ref uint lookup, ref uint slicingLookup)
+	private static uint UpdateWord(ulong word, uint state, ref uint lookup, ref uint slicingLookup)
 	{
-		return Unsafe.Add(ref slicingLookup, (uint)(6 * TableSize + (byte)word))
-				^ Unsafe.Add(ref slicingLookup, (uint)(5 * TableSize + (byte)(word >> 8)))
-				^ Unsafe.Add(ref slicingLookup, (uint)(4 * TableSize + (byte)(word >> 16)))
-				^ Unsafe.Add(ref slicingLookup, (uint)(3 * TableSize + ((int)word >>> 24)))
-				^ Unsafe.Add(ref slicingLookup, (uint)(2 * TableSize + (byte)(word >> 32)))
-				^ Unsafe.Add(ref slicingLookup, (uint)(1 * TableSize + (byte)(word >> 40)))
-				^ Unsafe.Add(ref slicingLookup, (byte)(word >> 48))
-				^ Unsafe.Add(ref lookup, (int)(word >> 56));
+		// The upper half can be reduced before the previous word's CRC is available.
+		uint upper = (uint)(word >> 32);
+		uint highContribution = Slice(ref slicingLookup, 2, (byte)upper)
+								^ Slice(ref slicingLookup, 1, (byte)(upper >> 8))
+								^ Unsafe.Add(ref slicingLookup, (byte)(upper >> 16))
+								^ Unsafe.Add(ref lookup, upper >> 24);
+		uint lower = (uint)word ^ state;
+		uint lowContribution = Slice(ref slicingLookup, 6, (byte)lower)
+								^ Slice(ref slicingLookup, 5, (byte)(lower >> 8))
+								^ Slice(ref slicingLookup, 4, (byte)(lower >> 16))
+								^ Slice(ref slicingLookup, 3, lower >> 24);
+		return highContribution ^ lowContribution;
+	}
+
+	// A constant byte offset folds into the displacement of the load; an index sum computed in 32 bits does not.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static uint Slice(ref uint slicingLookup, int table, uint index)
+	{
+		return Unsafe.AddByteOffset(ref Unsafe.Add(ref slicingLookup, index), (nuint)(table * TableSize * sizeof(uint)));
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

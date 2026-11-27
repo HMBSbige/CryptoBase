@@ -3,8 +3,10 @@ namespace CryptoBase.Hashes.Crc32;
 internal static partial class Crc32Vectorized
 {
 	private const int Avx2EightStreamThresholdInBytes = 4 * 1024;
+	private const ulong IeeeFold128Lower = 0x01751997d0UL;
+	private const ulong IeeeFold128Upper = 0x00ccaa009eUL;
 
-	internal static readonly Crc32X86FoldingConstants IeeeX86Constants = new(0x011542778aUL, 0x01322d1430UL, 0x01e88ef372UL, 0x014a7fe880UL, 0x0154442bd4UL, 0x01c6e41596UL, 0x00f1da05aaUL, 0x015a546366UL, 0x01751997d0UL, 0x00ccaa009eUL);
+	internal static readonly Crc32X86FoldingConstants IeeeX86Constants = new(0x011542778aUL, 0x01322d1430UL, 0x01e88ef372UL, 0x014a7fe880UL, 0x0154442bd4UL, 0x01c6e41596UL, 0x00f1da05aaUL, 0x015a546366UL, IeeeFold128Lower, IeeeFold128Upper);
 
 	internal static readonly Crc32X86FoldingConstants CastagnoliX86Constants = new(0x00dcb17aa4UL, 0x00b9e02b86UL, 0x006992cea2UL, 0x0206e38d70UL, 0x00740eef02UL, 0x009e4addf8UL, 0x003da6d0cbUL, 0x00ba4fc28eUL, 0x0ec1068c50UL, 0x00493c7d27UL);
 
@@ -16,8 +18,27 @@ internal static partial class Crc32Vectorized
 	private const MethodImplOptions FoldX86Options = MethodImplOptions.NoInlining;
 #endif
 
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static uint UpdateShortIeeeX86(uint state, ReadOnlySpan<byte> source)
+	{
+		// FoldRemainingX86 leaves a partial block unfolded without SSSE3.
+		Debug.Assert(Ssse3.IsSupported && Pclmulqdq.IsSupported);
+		Debug.Assert(source.Length >= Vector128<byte>.Count);
+		ref byte start = ref MemoryMarshal.GetReference(source);
+		Vector128<ulong> folded = Load(ref start, 0) ^ Vector128.CreateScalar(state).AsUInt64();
+		int remaining = source.Length - Vector128<byte>.Count;
+		if (remaining != 0)
+		{
+			ref byte next = ref Unsafe.Add(ref start, Vector128<byte>.Count);
+			folded = FoldRemainingX86(folded, ref next, ref remaining, Vector128.Create(IeeeFold128Lower, IeeeFold128Upper));
+			Debug.Assert(remaining is 0);
+		}
+
+		return ReduceBarrettX86<Crc32Core>(folded);
+	}
+
 	[MethodImpl(FoldX86Options)]
-	internal static Vector128<ulong> FoldX86512(uint state, ReadOnlySpan<byte> source, in Crc32X86FoldingConstants constants, out int bytesConsumed)
+	internal static Vector128<ulong> FoldX86512<TAlgorithm>(uint state, ReadOnlySpan<byte> source, in Crc32X86FoldingConstants constants, out int bytesConsumed) where TAlgorithm : unmanaged
 	{
 		Debug.Assert(Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported);
 		Debug.Assert(source.Length >= 4 * Vector512<byte>.Count);
@@ -59,6 +80,20 @@ internal static partial class Crc32Vectorized
 			x2 = Fold512(Vector512.LoadUnsafe(ref sourceRef, 64).AsUInt64(), x2, fold1024);
 			sourceRef = ref Unsafe.Add(ref sourceRef, 2 * Vector512<byte>.Count);
 			length -= 2 * Vector512<byte>.Count;
+		}
+
+		if (Crc32Engine.IsIeee<TAlgorithm>() && length < Vector128<byte>.Count)
+		{
+			// Each 128-bit lane is weighted by its distance from the last lane, which contributes directly.
+			Vector512<ulong> firstWeights = Vector512.Create(0x01ea89367eUL, 0x01d7cfc6acUL, 0x00df068dc2UL, 0x018cb44e58UL, 0x01c7569e54UL, 0x00ae0b5394UL, 0x0154442bd4UL, 0x01c6e41596UL);
+			Vector512<ulong> lastWeights = Vector512.Create(0x003db1ecdcUL, 0x0174359406UL, 0x00f1da05aaUL, 0x015a546366UL, IeeeFold128Lower, IeeeFold128Upper, 0UL, 0UL);
+			Vector512<ulong> firstProducts = Pclmulqdq.V512.CarrylessMultiply(x1, firstWeights, 0x00) ^ Pclmulqdq.V512.CarrylessMultiply(x1, firstWeights, 0x11);
+			Vector512<ulong> lastProducts = Fold512(firstProducts, x2, lastWeights);
+			Vector256<ulong> pair = lastProducts.GetUpper() ^ lastProducts.GetLower();
+			Vector128<ulong> reduced = pair.GetUpper() ^ pair.GetLower() ^ x2.GetUpper().GetUpper();
+			reduced = FoldRemainingX86(reduced, ref sourceRef, ref length, constants.Fold128Vector128);
+			bytesConsumed = source.Length - length;
+			return reduced;
 		}
 
 		Vector512<ulong> fold512 = constants.Fold512Vector512;
@@ -197,7 +232,7 @@ internal static partial class Crc32Vectorized
 			length -= Vector128<byte>.Count;
 		}
 
-		x1 = FoldRemainingX86(x1, ref sourceRef, ref length, in constants);
+		x1 = FoldRemainingX86(x1, ref sourceRef, ref length, fold128);
 		bytesConsumed = source.Length - length;
 		return x1;
 	}
@@ -205,14 +240,25 @@ internal static partial class Crc32Vectorized
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static uint ReduceBarrettX86<TAlgorithm>(Vector128<ulong> value) where TAlgorithm : unmanaged
 	{
-		bool isIeee = Crc32Engine.IsIeee<TAlgorithm>();
-		Vector128<ulong> fold64 = isIeee ? Vector128.CreateScalar(0x00ccaa009eUL) : Vector128.CreateScalar(0x014cd00bd6UL);
-		Vector128<ulong> fold32 = isIeee ? Vector128.CreateScalar(0x0163cd6124UL) : Vector128.CreateScalar(0x00dd45aab8UL);
+		if (Crc32Engine.IsIeee<TAlgorithm>())
+		{
+			// For the reflected IEEE polynomial P, the quotient modulo x^128 is the input times 1/P.
+			// Multiplying its high 64 bits by P places the 32-bit remainder in bits 64 through 95.
+			Vector128<ulong> reciprocal = Vector128.Create(0xb4e5b025f7011641UL, 0xe8f6c5afc0be831eUL);
+			Vector128<ulong> lowProduct = Pclmulqdq.CarrylessMultiply(value, reciprocal, 0x00);
+			Vector128<ulong> crossProducts = Pclmulqdq.CarrylessMultiply(value, reciprocal, 0x10) ^ Pclmulqdq.CarrylessMultiply(value, reciprocal, 0x01);
+			Vector128<ulong> quotientHigh = crossProducts ^ Sse2.ShiftRightLogical128BitLane(lowProduct, 8);
+			Vector128<ulong> remainder = Pclmulqdq.CarrylessMultiply(quotientHigh, Vector128.CreateScalar(0x01db710641UL), 0x00);
+			return remainder.AsUInt32().GetElement(2);
+		}
+
+		Vector128<ulong> fold64 = Vector128.CreateScalar(0x014cd00bd6UL);
+		Vector128<ulong> fold32 = Vector128.CreateScalar(0x00dd45aab8UL);
 		Vector128<ulong> bitmask = Vector128.Create((ulong)uint.MaxValue);
 		value = Sse2.ShiftRightLogical128BitLane(value, 8) ^ Pclmulqdq.CarrylessMultiply(value, fold64, 0x00);
 		value = Pclmulqdq.CarrylessMultiply(value & bitmask, fold32, 0x00) ^ Sse2.ShiftRightLogical128BitLane(value, 4);
 
-		Vector128<ulong> polynomialMu = isIeee ? Vector128.Create(0x01db710641UL, 0x01f7011641UL) : Vector128.Create(0x0105ec76f1UL, 0x00dea713f1UL);
+		Vector128<ulong> polynomialMu = Vector128.Create(0x0105ec76f1UL, 0x00dea713f1UL);
 		Vector128<ulong> reduction = Pclmulqdq.CarrylessMultiply(value & bitmask, polynomialMu, 0x10) & bitmask;
 		reduction = Pclmulqdq.CarrylessMultiply(reduction, polynomialMu, 0x00);
 		return (value ^ reduction).AsUInt32().GetElement(1);
@@ -258,14 +304,12 @@ internal static partial class Crc32Vectorized
 		}
 
 		Vector128<ulong> fold128 = constants.Fold128Vector128;
-		return FoldRemainingX86(Fold128(folded.GetUpper(), folded.GetLower(), fold128), ref sourceRef, ref length, in constants);
+		return FoldRemainingX86(Fold128(folded.GetUpper(), folded.GetLower(), fold128), ref sourceRef, ref length, fold128);
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private static Vector128<ulong> FoldRemainingX86(Vector128<ulong> state, ref byte source, ref int length, in Crc32X86FoldingConstants constants)
+	private static Vector128<ulong> FoldRemainingX86(Vector128<ulong> state, ref byte source, ref int length, Vector128<ulong> fold128)
 	{
-		Vector128<ulong> fold128 = constants.Fold128Vector128;
-
 		while (length >= Vector128<byte>.Count)
 		{
 			state = Fold128(Load(ref source, 0), state, fold128);

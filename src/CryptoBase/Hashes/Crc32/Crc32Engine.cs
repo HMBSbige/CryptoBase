@@ -56,12 +56,19 @@ internal static class Crc32Engine
 		// CRC-32C with SSE4.2 returned above unless the widest supported fold applies, so these thresholds only matter without a CRC instruction.
 		if (Pclmulqdq.IsSupported)
 		{
+			if (isIeee && Ssse3.IsSupported && source.Length < 8 * Vector128<byte>.Count)
+			{
+				return source.Length >= Vector128<byte>.Count
+					? Crc32Vectorized.UpdateShortIeeeX86(state, source)
+					: Crc32Software.UpdateShort<TAlgorithm>(state, source);
+			}
+
 			if (source.Length >= X86Avx512Threshold && UseX86Vector512)
 			{
 #if NET11_0_OR_GREATER
 				return UpdateX86512<TAlgorithm>(state, source);
 #else
-				return FinishX86<TAlgorithm>(Crc32Vectorized.FoldX86512(state, source, in GetX86Constants<TAlgorithm>(), out int bytesConsumed), source, bytesConsumed);
+				return FinishX86<TAlgorithm>(Crc32Vectorized.FoldX86512<TAlgorithm>(state, source, in GetX86Constants<TAlgorithm>(), out int bytesConsumed), source, bytesConsumed);
 #endif
 			}
 
@@ -163,7 +170,7 @@ internal static class Crc32Engine
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static uint UpdateX86512<TAlgorithm>(uint state, ReadOnlySpan<byte> source) where TAlgorithm : unmanaged
 	{
-		return FinishX86<TAlgorithm>(Crc32Vectorized.FoldX86512(state, source, in GetX86Constants<TAlgorithm>(), out int bytesConsumed), source, bytesConsumed);
+		return FinishX86<TAlgorithm>(Crc32Vectorized.FoldX86512<TAlgorithm>(state, source, in GetX86Constants<TAlgorithm>(), out int bytesConsumed), source, bytesConsumed);
 	}
 
 	// Folds and reduces with 256-bit vectors.
@@ -218,7 +225,58 @@ internal static class Crc32Engine
 		ref byte sourceRef = ref MemoryMarshal.GetReference(source);
 		int length = source.Length;
 
-		if (Sse42.X64.IsSupported || Crc32Arm.Arm64.IsSupported)
+		if (!isIeee && Sse42.X64.IsSupported)
+		{
+			if ((length & sizeof(ulong) - 1) != 0)
+			{
+				if ((length & 1) != 0)
+				{
+					state = Sse42.Crc32(state, sourceRef);
+					sourceRef = ref Unsafe.Add(ref sourceRef, 1);
+				}
+
+				if (length < sizeof(ushort))
+				{
+					return state;
+				}
+
+				if ((length & sizeof(ushort)) != 0)
+				{
+					state = Sse42.Crc32(state, Unsafe.ReadUnaligned<ushort>(ref sourceRef));
+					sourceRef = ref Unsafe.Add(ref sourceRef, sizeof(ushort));
+				}
+
+				if ((length & sizeof(uint)) != 0)
+				{
+					state = Sse42.Crc32(state, Unsafe.ReadUnaligned<uint>(ref sourceRef));
+					sourceRef = ref Unsafe.Add(ref sourceRef, sizeof(uint));
+				}
+
+				if (length < sizeof(ulong))
+				{
+					return state;
+				}
+			}
+
+			ulong crc = state;
+
+			while (length >= 2 * sizeof(ulong))
+			{
+				crc = Sse42.X64.Crc32(crc, Unsafe.ReadUnaligned<ulong>(ref sourceRef));
+				crc = Sse42.X64.Crc32(crc, Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref sourceRef, sizeof(ulong))));
+				sourceRef = ref Unsafe.Add(ref sourceRef, 2 * sizeof(ulong));
+				length -= 2 * sizeof(ulong);
+			}
+
+			if ((length & sizeof(ulong)) != 0)
+			{
+				crc = Sse42.X64.Crc32(crc, Unsafe.ReadUnaligned<ulong>(ref sourceRef));
+			}
+
+			return (uint)crc;
+		}
+
+		if (Crc32Arm.Arm64.IsSupported)
 		{
 			while (length >= sizeof(ulong))
 			{
