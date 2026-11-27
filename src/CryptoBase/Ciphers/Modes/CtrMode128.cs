@@ -13,15 +13,13 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCipher
 	private const int BlockSize = 16;
 	// Not readonly: a readonly field would make Dispose run on a defensive copy when TBlockCipher is a struct.
 	private TBlockCipher _blockCipher;
-	private Vector128<byte> _counter;
-	private Vector128<byte> _keyStream;
-	private int _index;
+	private CtrStreamState _state;
 	private bool _disposed;
 
 	private CtrMode128(TBlockCipher blockCipher, ReadOnlySpan<byte> initialCounter)
 	{
 		_blockCipher = blockCipher;
-		_counter = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(initialCounter));
+		_state.Counter = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(initialCounter));
 	}
 
 	/// <summary>Creates a keyed CTR stream with the specified initial counter.</summary>
@@ -52,9 +50,9 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCipher
 		ObjectDisposedException.ThrowIf(_disposed, this);
 		ArgumentOutOfRangeException.ThrowIfNotEqual(initialCounter.Length, BlockSize, nameof(initialCounter));
 
-		_counter = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(initialCounter));
-		_keyStream.ZeroMemory();
-		_index = 0;
+		_state.Counter = Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(initialCounter));
+		_state.KeyStream.ZeroMemory();
+		_state.Index = 0;
 	}
 
 	/// <inheritdoc />
@@ -67,43 +65,50 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCipher
 		int offset = 0;
 		int left = source.Length;
 
-		if (_index is not 0 && left > 0)
+		if (_state.Index is not 0 && left > 0)
 		{
-			int n = Math.Min(BlockSize - _index, left);
-			FastUtils.XorLess16(_keyStream.AsSpan().Slice(_index), source, destination, n);
-			_index = _index + n & BlockSize - 1;
+			int n = Math.Min(BlockSize - _state.Index, left);
+			FastUtils.XorLess16(_state.KeyStream.AsSpan().Slice(_state.Index), source, destination, n);
+			_state.Index = _state.Index + n & BlockSize - 1;
 			offset += n;
 			left -= n;
 		}
 
 		if (left > BlockSize)
 		{
-			int processed = BlockModeDispatch.XorCtr<TBlockCipher, CtrIncrementer128>(_blockCipher, ref _counter, source.Slice(offset), destination.Slice(offset));
+			if (BlockModeDispatch.TryXorCtrShort<TBlockCipher, CtrIncrementer128>(_blockCipher, ref _state, source, destination, offset))
+			{
+				return;
+			}
+
+			int processed = BlockModeDispatch.XorCtr<TBlockCipher, CtrIncrementer128>(_blockCipher, ref _state.Counter, source.Slice(offset), destination.Slice(offset));
 			offset += processed;
 			left -= processed;
 		}
 
 		if (left > BlockSize)
 		{
-			int processed = CtrBlocks<TBlockCipher, CtrIncrementer128>.XorBlocks(_blockCipher, ref _counter, source.Slice(offset), destination.Slice(offset));
+			int processed = CtrBlocks<TBlockCipher, CtrIncrementer128>.XorBlocks(_blockCipher, ref _state.Counter, source.Slice(offset), destination.Slice(offset));
 			offset += processed;
 			left -= processed;
 		}
 
 		if (left > 0)
 		{
-			_keyStream = CtrBlocks<TBlockCipher, CtrIncrementer128>.EncryptCounter(_blockCipher, ref _counter);
+			// Assigning the field only after the call keeps the address of _state from living across it.
+			Vector128<byte> keyStream = CtrBlocks<TBlockCipher, CtrIncrementer128>.EncryptCounter(_blockCipher, ref _state.Counter);
+			_state.KeyStream = keyStream;
 
 			if (left is BlockSize)
 			{
-				(Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(source), (nuint)offset) ^ _keyStream).StoreUnsafe(ref MemoryMarshal.GetReference(destination), (nuint)offset);
+				(Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(source), (nuint)offset) ^ keyStream).StoreUnsafe(ref MemoryMarshal.GetReference(destination), (nuint)offset);
 			}
 			else
 			{
-				FastUtils.XorLess16(_keyStream.AsSpan(), source.Slice(offset), destination.Slice(offset), left);
+				FastUtils.XorLess16(_state.KeyStream.AsSpan(), source.Slice(offset), destination.Slice(offset), left);
 			}
 
-			_index = left & BlockSize - 1;
+			_state.Index = left & BlockSize - 1;
 		}
 	}
 
@@ -116,9 +121,7 @@ public sealed class CtrMode128<TBlockCipher> : IStreamCipher
 		}
 
 		_disposed = true;
-		_counter.ZeroMemory();
-		_keyStream.ZeroMemory();
-		_index = 0;
+		_state.ZeroMemory();
 		_blockCipher.Dispose();
 	}
 }

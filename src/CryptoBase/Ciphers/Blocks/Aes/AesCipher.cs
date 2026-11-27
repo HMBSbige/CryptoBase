@@ -1,4 +1,5 @@
 using CryptoBase.Ciphers.Modes;
+using CryptoBase.Ciphers.Modes.Ctr;
 using AesArm = System.Runtime.Intrinsics.Arm.Aes;
 
 namespace CryptoBase.Ciphers.Blocks.Aes;
@@ -231,6 +232,21 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		}
 
 		return false;
+	}
+
+	// A readonly reference to the generic core would make the compiler copy the whole core before each call.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal void XorCtrShort<TIncrementer>(ref CtrStreamState state, ReadOnlySpan<byte> source, Span<byte> destination) where TIncrementer : struct, ICtrIncrementer
+	{
+		if (AesCipherX86.IsSupported)
+		{
+			AesCtrBlocks<AesCipherX86, TIncrementer>.XorShort(ref _state.X86, ref state, source, destination);
+		}
+		else
+		{
+			Debug.Assert(AesCipherArm.IsSupported);
+			AesCtrBlocks<AesCipherArm, TIncrementer>.XorShort(ref _state.Arm, ref state, source, destination);
+		}
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]

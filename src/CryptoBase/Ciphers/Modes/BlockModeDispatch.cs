@@ -32,6 +32,24 @@ internal static class BlockModeDispatch
 		return 0;
 	}
 
+	// Takes the 17 to 64 bytes from offset on in one parallel AES pass and keeps the keystream of a partial last block in state.
+	// On ARM exactly four blocks stay on the batch path, which already encrypts the four counters together and measured slightly faster for AES-128.
+	// Slicing only on success keeps the caller's sliced spans from living, and spilling, across the fallback path.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	internal static bool TryXorCtrShort<TCipher, TIncrementer>(TCipher cipher, ref CtrStreamState state, ReadOnlySpan<byte> source, Span<byte> destination, int offset) where TCipher : IBlockEncryptor<TCipher> where TIncrementer : struct, ICtrIncrementer
+	{
+		int length = source.Length - offset;
+		Debug.Assert(length > BlockSize);
+
+		if (length > 4 * BlockSize || !(AesCipherX86.IsSupported || AesCipherArm.IsSupported && length < 4 * BlockSize) || cipher is not AesCipher aes)
+		{
+			return false;
+		}
+
+		aes.XorCtrShort<TIncrementer>(ref state, source.Slice(offset), destination.Slice(offset));
+		return true;
+	}
+
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static bool TryEncryptXor<TCipher>(TCipher cipher, ReadOnlySpan<byte> counters, ReadOnlySpan<byte> data, Span<byte> destination) where TCipher : IBlockEncryptor<TCipher>
 	{
