@@ -116,9 +116,9 @@ internal readonly unsafe struct MontgomeryPairKernelAvx512<TWindow> : IMontgomer
 	private static void Products(ref ulong x, ref ulong y, int words, ref ulong rows, Vector512<double> high, Vector512<double> low)
 	{
 		int row = 2 * MaxDigitCount;
-		Vector512<double> a0 = Vector512.Create(Avx512DQ.VL.ConvertToVector128Double(Vector128.LoadUnsafe(ref x)));
-		Vector512<double> a1 = Vector512.Create(Avx512DQ.VL.ConvertToVector128Double(Vector128.LoadUnsafe(ref x, 2)));
-		Vector512<double> a2 = Vector512.Create(Avx512DQ.VL.ConvertToVector128Double(Vector128.LoadUnsafe(ref x, 4)));
+		Vector512<double> a0 = Vector512.Broadcast(Avx512DQ.VL.ConvertToVector128Double(Vector128.LoadUnsafe(ref x)));
+		Vector512<double> a1 = Vector512.Broadcast(Avx512DQ.VL.ConvertToVector128Double(Vector128.LoadUnsafe(ref x, 2)));
+		Vector512<double> a2 = Vector512.Broadcast(Avx512DQ.VL.ConvertToVector128Double(Vector128.LoadUnsafe(ref x, 4)));
 		Vector512<ulong> highBits = Vector512.Create(Avx512Window.HighBits);
 		Vector512<ulong> lowBits = Vector512.Create(Avx512Window.LowBits);
 

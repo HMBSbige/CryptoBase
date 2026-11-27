@@ -316,15 +316,22 @@ internal static class SM2OctoFormulas
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void Join(in SM2Field29x4Avx2 low, in SM2Field29x4Avx2 high, out SM2Field29x8Avx512 result)
 	{
-		result.L0 = Vector512.Create(low.L0, high.L0);
-		result.L1 = Vector512.Create(low.L1, high.L1);
-		result.L2 = Vector512.Create(low.L2, high.L2);
-		result.L3 = Vector512.Create(low.L3, high.L3);
-		result.L4 = Vector512.Create(low.L4, high.L4);
-		result.L5 = Vector512.Create(low.L5, high.L5);
-		result.L6 = Vector512.Create(low.L6, high.L6);
-		result.L7 = Vector512.Create(low.L7, high.L7);
-		result.L8 = Vector512.Create(low.L8, high.L8);
+		result.L0 = Join(low.L0, high.L0);
+		result.L1 = Join(low.L1, high.L1);
+		result.L2 = Join(low.L2, high.L2);
+		result.L3 = Join(low.L3, high.L3);
+		result.L4 = Join(low.L4, high.L4);
+		result.L5 = Join(low.L5, high.L5);
+		result.L6 = Join(low.L6, high.L6);
+		result.L7 = Join(low.L7, high.L7);
+		result.L8 = Join(low.L8, high.L8);
+	}
+
+	// The insertion overwrites the upper half. Vector512.Create loads a stack slot and inserts both halves.
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private static Vector512<ulong> Join(Vector256<ulong> low, Vector256<ulong> high)
+	{
+		return Avx512F.InsertVector256(low.ToVector512Unsafe(), high, 1);
 	}
 
 	// The rounds of SM2QuadFormulas.AddState in each half.
@@ -1545,9 +1552,8 @@ internal static class SM2OctoFormulas
 		Vector128<ulong> xyh = Vector128.LoadUnsafe(ref high, (nuint)(2 * i));
 		Vector128<ulong> czh = Vector128.LoadUnsafe(ref high, (nuint)(CubeOffset + 2 * i));
 		Vector128<ulong> sh = Vector128.CreateScalar(Unsafe.Add(ref high, SquareOffset + i));
-		// The low half goes into a vector whose upper half the insertion writes over, which Vector512.Create would first take from a slot of the stack.
-		a = Avx512F.InsertVector256(Vector256.Create(Sse2.UnpackLow(sl, xyl), Sse2.UnpackHigh(xyl, czl)).ToVector512Unsafe(), Vector256.Create(Sse2.UnpackLow(sh, xyh), Sse2.UnpackHigh(xyh, czh)), 1);
-		b = Avx512F.InsertVector256(Vector256.Create(Sse2.UnpackLow(xyl, sl), Sse2.UnpackLow(czl, czl)).ToVector512Unsafe(), Vector256.Create(Sse2.UnpackLow(xyh, sh), Sse2.UnpackLow(czh, czh)), 1);
+		a = Join(Vector256.Create(Sse2.UnpackLow(sl, xyl), Sse2.UnpackHigh(xyl, czl)), Vector256.Create(Sse2.UnpackLow(sh, xyh), Sse2.UnpackHigh(xyh, czh)));
+		b = Join(Vector256.Create(Sse2.UnpackLow(xyl, sl), Sse2.UnpackLow(czl, czl)), Vector256.Create(Sse2.UnpackLow(xyh, sh), Sse2.UnpackLow(czh, czh)));
 	}
 
 	// Unpacks entries first and second of the table into the halves of entry; ClearsIntermediates tells whether Multiply clears what it kept.

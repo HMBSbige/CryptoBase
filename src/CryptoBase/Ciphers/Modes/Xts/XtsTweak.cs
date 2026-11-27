@@ -17,7 +17,7 @@ internal static class XtsTweak
 			Vector128<byte> t1 = MultiplyByAlpha(currentTweak);
 			Vector128<byte> t2 = MultiplyByAlpha(t1);
 			Vector128<byte> t3 = MultiplyByAlpha(t2);
-			Vector512<byte> lanes = Vector512.Create(Vector256.Create(currentTweak, t1), Vector256.Create(t2, t3));
+			Vector512<byte> lanes = Vector256.Create(currentTweak, t1).ToVector512Unsafe().WithUpper(Vector256.Create(t2, t3));
 
 			for (; i <= destination.Length - 64; i += 64)
 			{
