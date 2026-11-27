@@ -94,15 +94,17 @@ internal static class EcdsaEncoding<TOrder> where TOrder : unmanaged, IMontgomer
 
 	internal static bool TryRead(ReadOnlySpan<byte> signature, out FieldElement<TOrder> r, out FieldElement<TOrder> s)
 	{
-		s = default;
-
 		if (!TryReadElement(signature, SequenceTag, out ReadOnlySpan<byte> contents, out int consumed) || consumed != signature.Length)
 		{
 			r = default;
-			return false;
+		}
+		else if (TryReadInteger(ref contents, out r))
+		{
+			return TryReadInteger(ref contents, out s) && contents.IsEmpty;
 		}
 
-		return TryReadInteger(ref contents, out r) && TryReadInteger(ref contents, out s) && contents.IsEmpty;
+		s = default;
+		return false;
 	}
 
 	// A signature has no content of 256 bytes or more, so a length of more than one byte is invalid whatever its value.

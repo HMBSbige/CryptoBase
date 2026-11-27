@@ -176,7 +176,7 @@ internal partial struct AesCipherSoftware : IDisposable, IAesSubWord
 	static uint IAesSubWord.SubWord(uint value)
 	{
 		// With the word in every block lane, byte j of bit plane i repeats bit i of byte j, so no transpose is needed.
-		InlineArray8<ulong> state = default;
+		Unsafe.SkipInit(out InlineArray8<ulong> state);
 
 		for (int i = 0; i < 8; ++i)
 		{

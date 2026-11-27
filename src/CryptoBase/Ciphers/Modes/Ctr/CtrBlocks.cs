@@ -50,7 +50,7 @@ internal static class CtrBlocks<TBlockCipher, TIncrementer>
 
 	internal static void XorBlock(TBlockCipher blockCipher, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
-		Vector128<byte> keyStream = default;
+		Unsafe.SkipInit(out Vector128<byte> keyStream);
 
 		try
 		{
