@@ -48,7 +48,6 @@ internal static class Blake3Compressor
 		Blake3Scalar.CompressXof(in cv, ref block, blockLength, counter, flags, ref output);
 	}
 
-	[SkipLocalsInit]
 	internal static void HashChunk(ref byte input, nuint length, ref readonly uint key, ulong counter, uint flags, ref byte output)
 	{
 		Debug.Assert(length is > 0 and <= ChunkLength);
@@ -86,7 +85,6 @@ internal static class Blake3Compressor
 		}
 	}
 
-	[SkipLocalsInit]
 	internal static void FinishChunk(ref byte chunk, nuint length, ref readonly uint key, ulong counter, uint flags, ref byte output)
 	{
 		Debug.Assert(length is > 0 and < ChunkLength);
@@ -103,7 +101,6 @@ internal static class Blake3Compressor
 		CompressLastBlock(in cv[0], ref Unsafe.Add(ref chunk, lastBlockOffset), (uint)(length - lastBlockOffset), counter, flags, ref output);
 	}
 
-	[SkipLocalsInit]
 	private static void CompressLastBlock(ref readonly uint cv, ref byte block, uint blockLength, ulong counter, uint flags, ref byte output)
 	{
 		Unsafe.SkipInit(out InlineArray64<byte> padded);

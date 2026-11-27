@@ -104,7 +104,6 @@ internal struct Blake3State
 		return true;
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal void Append(ReadOnlySpan<byte> source, int maxDegreeOfParallelism, ThreadPoolHelperBudget budget, Span<byte> buffer, Span<byte> stack)
 	{
@@ -240,7 +239,6 @@ internal struct Blake3State
 		}
 	}
 
-	[SkipLocalsInit]
 	private void PushSubtree(ReadOnlySpan<byte> subtree, Span<byte> stack)
 	{
 		Unsafe.SkipInit(out InlineArray64<byte> buffer);
@@ -273,7 +271,6 @@ internal struct Blake3State
 
 	// The calling thread hashes a head of several chunks while pool threads start on the body.
 	// A head of one chunk, which has no top node to keep and may go on from blocks that chunk mode compressed, is pushed once the body is hashed instead, since the state must not change before hashing has succeeded.
-	[SkipLocalsInit]
 	private bool AppendSubtreesInParallel(ReadOnlySpan<byte> head, ReadOnlySpan<byte> source, int maxDegreeOfParallelism, ThreadPoolHelperBudget budget, Span<byte> stack)
 	{
 		Unsafe.SkipInit(out InlineArray64<byte> headChildren);
@@ -370,7 +367,6 @@ internal struct Blake3State
 		UsedStackLength = Math.Max(UsedStackLength, StackLength);
 	}
 
-	[SkipLocalsInit]
 	internal readonly void CreateOutput(ReadOnlySpan<byte> buffer, ReadOnlySpan<byte> stack, out Blake3Output output)
 	{
 		ReadOnlySpan<byte> buffered = buffer.Slice(0, BufferLength);

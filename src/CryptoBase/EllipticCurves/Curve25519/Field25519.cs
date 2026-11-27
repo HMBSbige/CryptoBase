@@ -378,7 +378,6 @@ internal struct Field25519
 
 	// 1/value, and 0 for 0, by SafeGcd on the canonical value.
 	// Neither the time nor the addresses depend on value.
-	[SkipLocalsInit]
 	internal static void Invert(in Field25519 value, out Field25519 result)
 	{
 		Span<ulong> limbs = stackalloc ulong[4];
@@ -390,7 +389,6 @@ internal struct Field25519
 	}
 
 	// As above for a public value: the time depends on it.
-	[SkipLocalsInit]
 	internal static void InvertVariableTime(in Field25519 value, out Field25519 result)
 	{
 		Span<ulong> limbs = stackalloc ulong[4];

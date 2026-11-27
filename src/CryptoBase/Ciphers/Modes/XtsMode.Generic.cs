@@ -126,7 +126,6 @@ public sealed class XtsMode<TBlockCipher> : IDataUnitCipher<XtsMode<TBlockCipher
 		}
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void TransformBuffered<TDirection>(ref Vector128<byte> tweak, ReadOnlySpan<byte> source, Span<byte> destination, bool swapLastTweak) where TDirection : struct, IBlockDirection
 	{

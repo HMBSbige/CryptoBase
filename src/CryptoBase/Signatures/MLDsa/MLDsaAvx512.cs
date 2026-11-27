@@ -279,7 +279,8 @@ internal readonly partial struct MLDsaAvx512 : IMLDsaKernel
 
 		const int groupLength = 48;
 		Vector512<int> groups = Vector512.Create(0, 1, 2, 0, 3, 4, 5, 0, 6, 7, 8, 0, 9, 10, 11, 0);
-		Vector512<byte> fields = Vector512.Create(Vector128.Create(0, 1, 2, 0x80, 3, 4, 5, 0x80, 6, 7, 8, 0x80, 9, 10, 11, 0x80));
+		// Spelled out: without zeroed locals, the JIT builds Vector512.Create(Vector128) through a stack temporary instead of loading a constant.
+		Vector512<byte> fields = Vector512.Create(0, 1, 2, 0x80, 3, 4, 5, 0x80, 6, 7, 8, 0x80, 9, 10, 11, 0x80, 0, 1, 2, 0x80, 3, 4, 5, 0x80, 6, 7, 8, 0x80, 9, 10, 11, 0x80, 0, 1, 2, 0x80, 3, 4, 5, 0x80, 6, 7, 8, 0x80, 9, 10, 11, 0x80, 0, 1, 2, 0x80, 3, 4, 5, 0x80, 6, 7, 8, 0x80, 9, 10, 11, 0x80);
 		int count = 0;
 		int offset = 0;
 

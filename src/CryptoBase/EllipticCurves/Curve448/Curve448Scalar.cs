@@ -13,7 +13,6 @@ internal readonly struct Curve448Scalar : ICurve448Kernel
 
 	// Each step takes the bit of k from 447 down to 0.
 	// The swap mask is the XOR of the bit with the one before, so only arithmetic on k decides which pair each step doubles.
-	[SkipLocalsInit]
 	public static void Ladder(ReadOnlySpan<byte> scalar, in Field448 u, out Field448 x, out Field448 z)
 	{
 		Debug.Assert(scalar.Length is ScalarDigits.LimbCount * sizeof(ulong));
@@ -52,7 +51,6 @@ internal readonly struct Curve448Scalar : ICurve448Kernel
 	// The top tooth of a comb gives its sign: a top digit of −1 negates the entry of the lower teeth complemented.
 	// Every comb value is nonzero, so the first one starts the point.
 	// The last product before a doubling or Untwist gives projective coordinates, which is all that those take.
-	[SkipLocalsInit]
 	public static void MultiplyBase(ReadOnlySpan<byte> scalar, out EdwardsPoint result)
 	{
 		Debug.Assert(scalar.Length is ScalarDigits.LimbCount * sizeof(ulong));
@@ -114,7 +112,6 @@ internal readonly struct Curve448Scalar : ICurve448Kernel
 
 	// Interleaves the NAFs of a and b.
 	// A doubling that no addition follows goes to projective coordinates, which need one product fewer than extended ones.
-	[SkipLocalsInit]
 	public static void DoubleScalarMultiplyVariableTime(ReadOnlySpan<byte> a, in EdwardsPoint point, ReadOnlySpan<byte> b, out EdwardsPoint result)
 	{
 		const int digitCount = 8 * Edwards448.ScalarLength + 1;
@@ -183,7 +180,6 @@ internal readonly struct Curve448Scalar : ICurve448Kernel
 	}
 
 	// Each part of a and of b has a NAF of its own, which needs only the doublings of one part.
-	[SkipLocalsInit]
 	public static void DoubleScalarMultiplyVariableTime(ReadOnlySpan<byte> a, ReadOnlySpan<EdwardsAffinePoint> pointTable, ReadOnlySpan<byte> b, out EdwardsPoint result)
 	{
 		const int parts = EdwardsVariableTimePointTable.PartCount;

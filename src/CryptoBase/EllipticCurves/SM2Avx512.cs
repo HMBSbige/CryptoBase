@@ -64,7 +64,6 @@ internal readonly struct SM2Avx512 : ISM2Kernel
 	// S = ±R just if v2·S = ±v2·R, as v2 is not 0 mod n, and HalfScalars gives v1 = v2·u2 mod n with v1 and v2 below 2^128, so that v2·S = (v2·u1)·G + v1·Q.
 	// The chains of SM2OctoFormulas take v1·Q and |v2|·R side by side, each from the odd scalar that the value or one more than it is, which one subtraction of the point corrects;
 	// the sum T of v1·Q and (v2·u1)·G from the windows of G must not be the point at infinity, which it is just if S is, and must have the x of |v2|·R.
-	[SkipLocalsInit]
 	internal static bool MultiplyAddXModOrderEquals(in FieldElement<SM2Order> u1, in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> u2, in FieldElement<SM2Order> r)
 	{
 		ReadOnlySpan<ulong> x = FieldElement<SM2Order>.GetLimbs(in r);

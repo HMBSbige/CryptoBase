@@ -42,7 +42,6 @@ internal static class SM2QuadFormulas
 	// The windows of ECGroup.Multiply on the table of BuildTable: a window is two DoubleTwice and a DoubleAdd.
 	// The points of an addition are neither equal nor opposite except where the masks cover them and in window 0 for k = n − 6, where they are equal and the double takes the place of the sum.
 	// Neither the time nor the addresses depend on k or P, and the intermediates are cleared.
-	[SkipLocalsInit]
 	internal static void Multiply(in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> scalar, out JacobianPoint<SM2Field52> result)
 	{
 		Span<sbyte> digits = stackalloc sbyte[ECGroup<SM2Curve, SM2Field52, SM2Order>.DigitCount(WindowWidth)];
@@ -105,7 +104,6 @@ internal static class SM2QuadFormulas
 	// Writes j·P to entry j − 1 of the table in the layout of SM2PairFormulas.BuildTable.
 	// 2j·P = 2·(j·P) by DoubleOnce and (2j + 1)·P = 2j·P + P by AddState, an addition of points neither equal nor opposite, as 2j ± 1 < n.
 	// Neither the time nor the addresses depend on P, and the intermediates are cleared.
-	[SkipLocalsInit]
 	internal static void BuildTable(in AffinePoint<SM2Field52> point, Span<ulong> table)
 	{
 		Debug.Assert(table.Length == TableLength * EntryLength);
@@ -139,7 +137,6 @@ internal static class SM2QuadFormulas
 
 	// Four states as entries of EntryLength limbs, with X, Y and Z as Reduce leaves them, Z² the δ of the state and Z³ = Z·δ, a product for all four in one round.
 	// Joining limbs 2m and 2m + 1 of a product adds the bits of limb 2m from 29 up to limb 2m + 1, at most 1, which splitting them again leaves there.
-	[SkipLocalsInit]
 	internal static void Pack(Span<SM2QuadState> states, Span<ulong> destination)
 	{
 		Unsafe.SkipInit(out SM2Field29x4Avx2 left);
@@ -226,7 +223,6 @@ internal static class SM2QuadFormulas
 	}
 
 	// The entry of a state, with X, Y and Z as Reduce leaves them, Z² the δ of the state and Z³ = Z·δ from one product.
-	[SkipLocalsInit]
 	internal static void ToEntry(in SM2QuadState state, out SM2QuadEntry entry)
 	{
 		Unsafe.SkipInit(out entry);
@@ -294,7 +290,6 @@ internal static class SM2QuadFormulas
 
 	// The state of an entry, with α = (X − Z² + 4p)·3(X + Z²) in lane 0 of one round, the right carried.
 	// X − Z² + 4p is below 6p in limbs below 3·2^29, and 3(X + Z²), below 9.8p in limbs below 6·2^29 + 2^8, goes in carried, in limbs below 2^29 + 2^3, so α is below 2.9p.
-	[SkipLocalsInit]
 	internal static void FromEntry(in SM2QuadEntry entry, out SM2QuadState state)
 	{
 		Unsafe.SkipInit(out state);
@@ -392,7 +387,6 @@ internal static class SM2QuadFormulas
 	// They meet T and T′ in limbs below 7·2^29 + 2^8, X − δ + 4p in limbs below 5·2^29 + 2^22 and the folded X′ and Y′.
 	// A is below 1.3p, B below 1.2p, C8 below 1.8p, D below 3.2p, F below 1.2p, G4 below 1.25p and H below 1.3p, so the folds take values below 7.2p, those of X below 5.3p, and α′ and α″ are below 2.1p.
 	// The point at infinity gives some point, which the masks discard.
-	[SkipLocalsInit]
 	internal static void DoubleTwice(ref SM2QuadState state, int count)
 	{
 		Unsafe.SkipInit(out SM2QuadScratch5 scratch);
@@ -672,7 +666,6 @@ internal static class SM2QuadFormulas
 	}
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	[SkipLocalsInit]
 	private static void DoubleRoundsE0E1(ref SM2QuadState state, ref SM2Field29x4Avx2 left, ref SM2Field29x4Avx2 right, out SM2Field29x4Avx2 first, out SM2Field29x4Avx2 second)
 	{
 		left.L0 = Avx2.Permute4x64(state.P.L0, 0x44);
@@ -736,7 +729,6 @@ internal static class SM2QuadFormulas
 	// H and R have limbs below 3·2^29 + 2^6, W limbs below 6·2^29 + 2^8, X3 + 12p limbs below 7·2^29 + 2^6 and X − δ + 4p limbs below 5·2^29 + 2^22.
 	// The products of A0 and S1 and S2 are below 1.4p, so H and R are below 5.1p;
 	// HH and RR are below 1.9p, H3 below 1.3p and V below 1.1p, so W is below 8.5p, M1 below 2.4p and the fold takes a value below 6.4p, and α is below 2.9p.
-	[SkipLocalsInit]
 	internal static void DoubleAdd(ref SM2QuadState state, in SM2QuadEntry entry, ref readonly ulong zeroMask, ref readonly ulong infinityMask)
 	{
 		Unsafe.SkipInit(out SM2Field29x4Avx2 left);
@@ -1237,7 +1229,6 @@ internal static class SM2QuadFormulas
 
 	// k·Q for a public k below n by the NAF of u2 in ECVariableTimeGroup.MultiplyAdd, with the odd multiples of Q that BuildOddMultiples gives.
 	// The time and the branches depend on k and Q.
-	[SkipLocalsInit]
 	internal static void MultiplyVariableTime(in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> scalar, out JacobianPoint<SM2Field52> result)
 	{
 		Span<sbyte> digits = stackalloc sbyte[ECVariableTimeGroup<SM2Curve, SM2Field52, SM2Order>.DigitCount];
@@ -1284,7 +1275,6 @@ internal static class SM2QuadFormulas
 	}
 
 	// Q, 3Q, …, 15Q: (j + 2)·Q = j·Q + 2Q by AddState, additions of points neither equal nor opposite, as j + 2 < n and j ≠ 2.
-	[SkipLocalsInit]
 	private static void BuildOddMultiples(in AffinePoint<SM2Field52> point, Span<SM2QuadEntry> entries)
 	{
 		Span<SM2QuadState> sums = stackalloc SM2QuadState[2];
@@ -1332,7 +1322,6 @@ internal static class SM2QuadFormulas
 	// Z3 = Z1·Z2·H of AddState is 0 just for H = 0, so for equal or opposite points, which its formulas do not cover.
 	// Then the formulas of SM2Field52 tell them apart.
 	// The points are public, so the cases may branch.
-	[SkipLocalsInit]
 	private static void AddVariableTime(ref SM2QuadState total, ref bool infinity, in SM2QuadEntry entry)
 	{
 		if (infinity)
@@ -1378,7 +1367,6 @@ internal static class SM2QuadFormulas
 	// The entry must be neither equal nor opposite to the point, and neither may be the point at infinity.
 	// With X1, Y1 and Z1 of the state within its bounds, the products of A0 and S1 and S2 are below 1.3p, the other bounds of DoubleAdd hold, and α, of X3 as Reduce leaves it, is below 2p.
 	// Y3, folded, and Z3 go to the state carried.
-	[SkipLocalsInit]
 	internal static void AddState(ref SM2QuadState state, in SM2QuadEntry entry)
 	{
 		Unsafe.SkipInit(out SM2Field29x4Avx2 left);
@@ -1664,7 +1652,6 @@ internal static class SM2QuadFormulas
 	}
 
 	// 2·point in three rounds: E0 and E1 of DoubleTwice and [α′, ·, ·, ·] of O0 alone, with their bounds; X′ and Y′ go to the state carried.
-	[SkipLocalsInit]
 	internal static void DoubleOnce(ref SM2QuadState state)
 	{
 		Unsafe.SkipInit(out SM2QuadScratch6 scratch);
@@ -1782,7 +1769,6 @@ internal static class SM2QuadFormulas
 
 	// The entry (x, y, 1) of an affine point of the form E of SM2Field52, reduced.
 	// Each coordinate a·2^260 becomes a·2^261: its radix-2^52 limbs are doubled and cut into radix-2^29 limbs, limbs 2m + 1 taking as a sum, below 2^30, the bits that cross from one radix-2^52 limb into the next, for Reduce.
-	[SkipLocalsInit]
 	internal static void ToEntry(in AffinePoint<SM2Field52> point, out SM2QuadEntry entry)
 	{
 		Unsafe.SkipInit(out entry);

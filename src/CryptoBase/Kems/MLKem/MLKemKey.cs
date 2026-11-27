@@ -78,7 +78,6 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 	[UnscopedRef]
 	private readonly ReadOnlySpan<byte> D => _d;
 
-	[SkipLocalsInit]
 	internal void GenerateKey()
 	{
 		using CryptoBuffer<byte> seed = new(stackalloc byte[PrivateSeedLength]);
@@ -168,7 +167,6 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 		return EncapsulationKeyLength;
 	}
 
-	[SkipLocalsInit]
 	internal void Encapsulate(Span<byte> ciphertext, Span<byte> sharedSecret)
 	{
 		KemOutputs.ThrowIfInvalid(ciphertext, CiphertextLength, sharedSecret, SharedSecretLength);
@@ -179,7 +177,6 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 	}
 
 	// ML-KEM.Encaps_internal (Algorithm 17) with a given m, for known-answer tests.
-	[SkipLocalsInit]
 	internal void Encapsulate(ReadOnlySpan<byte> message, Span<byte> ciphertext, Span<byte> sharedSecret)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(message.Length, SymmetricLength, nameof(message));
@@ -223,7 +220,6 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 	}
 
 	// ML-KEM.KeyGen_internal (Algorithm 16) with K-PKE.KeyGen (Algorithm 13); seed is d ‖ z.
-	[SkipLocalsInit]
 	private void GenerateKey<TKernel>(ReadOnlySpan<byte> seed) where TKernel : IMLKemKernel
 	{
 		int k = K;
@@ -347,7 +343,6 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 	}
 
 	// ML-KEM.Encaps_internal (Algorithm 17).
-	[SkipLocalsInit]
 	private void Encapsulate<TKernel>(ReadOnlySpan<byte> message, Span<byte> ciphertext, Span<byte> sharedSecret) where TKernel : IMLKemKernel
 	{
 		if (!HasEncapsulationKeyHash)
@@ -367,7 +362,6 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 
 	// ML-KEM.Decaps_internal (Algorithm 18).
 	// The ciphertext is read in full before the shared secret is written, so the two may overlap.
-	[SkipLocalsInit]
 	private void Decapsulate<TKernel>(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret) where TKernel : IMLKemKernel
 	{
 		using CryptoBuffer<byte> secrets = new(stackalloc byte[4 * SymmetricLength]);
@@ -423,7 +417,6 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 	}
 
 	// Concurrent callers write the same bytes, so no lock is needed; the flag is set last.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void CompleteEncapsulationKeyHash<TKernel>(scoped ref OverlappedHash beside) where TKernel : IMLKemKernel
 	{
@@ -443,7 +436,6 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 	}
 
 	// K-PKE.Encrypt (Algorithm 14) given PRF(r, 0) to PRF(r, 2k), so that decapsulation can run J beside the PRF.
-	[SkipLocalsInit]
 	private readonly void Encrypt<TKernel>(ReadOnlySpan<byte> message, ReadOnlySpan<byte> prfOutputs, Span<byte> ciphertext) where TKernel : IMLKemKernel
 	{
 		int k = K;
@@ -486,7 +478,6 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 	}
 
 	// K-PKE.Decrypt (Algorithm 15).
-	[SkipLocalsInit]
 	private readonly void Decrypt<TKernel>(ReadOnlySpan<byte> ciphertext, Span<byte> message) where TKernel : IMLKemKernel
 	{
 		int k = K;
@@ -519,7 +510,6 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 	// Samples the entries of Â^T from first on that one batch takes, and returns how many.
 	// Â[j, i] = SampleNTT(ρ ‖ i ‖ j) is entry j · k + i, so the columns complete in order.
 	// Waiting PRF streams, or else hash, take the free lanes.
-	[SkipLocalsInit]
 	private readonly int SampleMatrixGroup<TKernel>(scoped ref KeccakBatchSponge<KeccakRate168> sponge, int first, int end, scoped ref OverlappedHash hash, scoped ref PrfGuests prf) where TKernel : IMLKemKernel
 	{
 		const int maxStreams = 8;
@@ -582,7 +572,6 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 		return count;
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void SampleRemaining<TKernel>(KeccakSponge<KeccakRate168> sponge, Span<short> polynomial, int sampled) where TKernel : IMLKemKernel
 	{
@@ -603,7 +592,6 @@ internal struct MLKemKey<TParameters> where TParameters : struct, IMLKemParamete
 	}
 
 	// hash gets a lane only if it can fill every permutation of the batch, since on narrow kernels the lane can cost a batch.
-	[SkipLocalsInit]
 	private static void Prf(ReadOnlySpan<byte> seed, int first, int streams, int length, Span<byte> outputs, scoped ref OverlappedHash hash)
 	{
 		const int maxStreams = 8;

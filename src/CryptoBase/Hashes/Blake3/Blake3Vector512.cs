@@ -90,7 +90,6 @@ internal readonly struct Blake3Vector512 : IBlake3XofKernel, IBlake3LaneKernel
 		Blake3Compressor.HashLast<Blake3Vector512>(ref input, count, tailLength, in key, counter, flags, ref output);
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void Hash(ref byte input, nuint count, nuint tailBlocks, ref readonly uint key, ulong counter, uint flags, ref byte output)
 	{
@@ -169,7 +168,6 @@ internal readonly struct Blake3Vector512 : IBlake3XofKernel, IBlake3LaneKernel
 	}
 
 	// Hashes sixteen consecutive full chunks as Hash does, without its offsets in memory: the loads and prefetches take constant offsets, and no lane takes the steps of a partial chunk.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void HashFull(ref byte input, ref readonly uint key, ulong counter, uint flags, ref byte output)
 	{
@@ -198,7 +196,6 @@ internal readonly struct Blake3Vector512 : IBlake3XofKernel, IBlake3LaneKernel
 		StoreChainingValues(h0, h1, h2, h3, h4, h5, h6, h7, ref output);
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void Xof(ref readonly uint cv, ref byte block, uint blockLength, ulong counter, uint flags, nuint count, ref byte output)
 	{

@@ -412,7 +412,6 @@ internal readonly partial struct MLKemVector128 : IMLKemKernel
 
 	// Nothing is written past the returned count.
 	// The bytes are public, so the shuffle may depend on them.
-	[SkipLocalsInit]
 	public static int RejectSample(ReadOnlySpan<byte> source, Span<short> destination)
 	{
 		Debug.Assert(source.Length % 3 is 0);

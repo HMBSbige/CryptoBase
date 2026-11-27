@@ -7,7 +7,6 @@ internal readonly struct Blake2bVector256 : IBlake2bKernel
 {
 	public static bool IsSupported => Avx2.IsSupported;
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void Compress(ref ulong state, ReadOnlySpan<byte> blocks, UInt128 counter, ulong finalFlag)
 	{

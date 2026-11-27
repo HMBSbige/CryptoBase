@@ -272,7 +272,6 @@ internal readonly partial struct MLKemAvx2 : IMLKemKernel
 
 	// The store writes eight lanes however few are accepted, so the values collect in a buffer first.
 	// The candidates are public, which allows the lookups and branches.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static int RejectSample(ReadOnlySpan<byte> source, Span<short> destination)
 	{

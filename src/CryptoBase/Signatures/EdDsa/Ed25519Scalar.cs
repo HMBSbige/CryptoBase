@@ -28,7 +28,6 @@ internal static class Ed25519Scalar
 	// then b < 2^134, δ·b < 2^259, and 2^7·L leaves the second below 2^260;
 	// then b < 2^8, δ·b < 2^133 < L, and L leaves the third below 2^252 + L < 2L, which a conditional subtraction takes below L.
 	// Neither the time nor the addresses depend on h.
-	[SkipLocalsInit]
 	internal static void ReduceWide(ReadOnlySpan<byte> source, out FieldElement<Ed25519Order> result)
 	{
 		Debug.Assert(source.Length is WideLength);

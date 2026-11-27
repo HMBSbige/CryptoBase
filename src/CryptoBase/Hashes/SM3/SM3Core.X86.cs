@@ -9,7 +9,6 @@ public partial struct SM3Core
 		private uint _element0;
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void ProcessBlocksX86(ref SM3Core hashAlgorithm, ReadOnlySpan<byte> source)
 	{

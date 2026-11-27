@@ -9,7 +9,6 @@ namespace CryptoBase.EllipticCurves.SM9;
 // The results may be the same variables as the inputs.
 internal static class SM9Curve<TField> where TField : unmanaged, ISM9Field<TField>
 {
-	[SkipLocalsInit]
 	internal static void Infinity(out SM9Point<TField> result)
 	{
 		result = default;
@@ -25,7 +24,6 @@ internal static class SM9Curve<TField> where TField : unmanaged, ISM9Field<TFiel
 	}
 
 	// Algorithm 7, 12 products and 2 by 3b, with 2t0 + t0 taken as 3·t0.
-	[SkipLocalsInit]
 	internal static void Add(in SM9Point<TField> left, in SM9Point<TField> right, out SM9Point<TField> result)
 	{
 		TField.Multiply(in left.X, in right.X, out TField t0);
@@ -66,7 +64,6 @@ internal static class SM9Curve<TField> where TField : unmanaged, ISM9Field<TFiel
 	}
 
 	// Algorithm 8, for Z2 = 1: 11 products and 2 by 3b, with 3·t0 as above.
-	[SkipLocalsInit]
 	internal static void Add(in SM9Point<TField> left, in SM9AffinePoint<TField> right, out SM9Point<TField> result)
 	{
 		TField.Multiply(in left.X, in right.X, out TField t0);
@@ -100,7 +97,6 @@ internal static class SM9Curve<TField> where TField : unmanaged, ISM9Field<TFiel
 	}
 
 	// Algorithm 9, 6 products, 2 squares and 1 by 3b, with the repeated sums taken as 8·t0 and 3·t2.
-	[SkipLocalsInit]
 	internal static void Double(in SM9Point<TField> value, out SM9Point<TField> result)
 	{
 		TField.Square(in value.Y, out TField t0);
@@ -161,7 +157,6 @@ internal static class SM9Curve<TField> where TField : unmanaged, ISM9Field<TFiel
 	}
 
 	// ulong.MaxValue if the points are the same, as X1·Z2 = X2·Z1 and Y1·Z2 = Y2·Z1; with X = 0 and Y ≠ 0 at infinity, that holds for two points at infinity and fails for one.
-	[SkipLocalsInit]
 	internal static ulong AreEqual(in SM9Point<TField> left, in SM9Point<TField> right)
 	{
 		TField.Multiply(in left.X, in right.Z, out TField x1);
@@ -173,7 +168,6 @@ internal static class SM9Curve<TField> where TField : unmanaged, ISM9Field<TFiel
 
 	// Returns ulong.MaxValue for the point at infinity, which gives (0, 0), not on the curve, and 0 otherwise.
 	// The inversion takes constant time, and Z⁻¹ is erased.
-	[SkipLocalsInit]
 	internal static ulong ToAffine(in SM9Point<TField> value, out SM9AffinePoint<TField> result)
 	{
 		ulong infinity = TField.IsZero(in value.Z);
@@ -185,7 +179,6 @@ internal static class SM9Curve<TField> where TField : unmanaged, ISM9Field<TFiel
 	}
 
 	// As above for a public point: returns false for the point at infinity, leaving result 0.
-	[SkipLocalsInit]
 	internal static bool ToAffineVariableTime(in SM9Point<TField> value, out SM9AffinePoint<TField> result)
 	{
 		if (TField.IsZero(in value.Z) is not 0)
@@ -202,7 +195,6 @@ internal static class SM9Curve<TField> where TField : unmanaged, ISM9Field<TFiel
 
 	// None of the points may be the point at infinity.
 	// One inversion for all of them, which takes constant time unless variableTime is set, for public points: result[i].X holds the product of the Z of points 0 to i until result[i] is written.
-	[SkipLocalsInit]
 	internal static void ToAffine(ReadOnlySpan<SM9Point<TField>> points, Span<SM9AffinePoint<TField>> result, bool variableTime)
 	{
 		Debug.Assert(points.Length > 0 && result.Length == points.Length);
@@ -246,7 +238,6 @@ internal static class SM9Curve<TField> where TField : unmanaged, ISM9Field<TFiel
 	}
 
 	// y² = x³ + b in constant time, for a point that may be a private key, whose squares are erased.
-	[SkipLocalsInit]
 	internal static bool IsOnCurve(in SM9AffinePoint<TField> point)
 	{
 		TField.Square(in point.X, out TField right);
@@ -261,7 +252,6 @@ internal static class SM9Curve<TField> where TField : unmanaged, ISM9Field<TFiel
 
 	// Sets result to k·P for a scalar of up to four 64-bit limbs, least significant first, by its NAF of width 4.
 	// The time depends on the scalar, which must be public, but not on the point, as the formulas are complete: the point may be a private key, and the multiples in its locals are erased.
-	[SkipLocalsInit]
 	internal static void MultiplyVariableTime(in SM9Point<TField> point, ReadOnlySpan<ulong> scalar, out SM9Point<TField> result)
 	{
 		const int nafWidth = 4;

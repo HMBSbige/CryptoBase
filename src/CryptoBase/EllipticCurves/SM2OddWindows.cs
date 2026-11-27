@@ -26,7 +26,6 @@ internal static class SM2OddWindows
 
 	// Writes the Count digits of k from s = (k + 2^260 − 1)/2 mod n, which takes n more at Exception: s stays below 2n < 2^260 and K moves by 2n, so K ≡ k (mod n) still.
 	// The arithmetic takes the same steps for every k, with masks for the reduction and the exception, and the intermediates are cleared.
-	[SkipLocalsInit]
 	internal static void Recode(in FieldElement<SM2Order> scalar, Span<sbyte> digits)
 	{
 		Debug.Assert(digits.Length is Count);

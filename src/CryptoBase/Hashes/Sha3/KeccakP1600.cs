@@ -40,7 +40,6 @@ internal static partial class KeccakP1600
 		return blocks * TBlocks.RateInBytes;
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void PermuteScalar(ref InlineArray25<ulong> state)
 	{

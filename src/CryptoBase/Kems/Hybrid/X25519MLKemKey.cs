@@ -116,7 +116,6 @@ internal struct X25519MLKemKey<TParameters> where TParameters : struct, IMLKemPa
 		return EncapsulationKeyLength;
 	}
 
-	[SkipLocalsInit]
 	internal void Encapsulate(Span<byte> ciphertext, Span<byte> sharedSecret)
 	{
 		ThrowIfCannotEncapsulate(ciphertext, sharedSecret);
@@ -127,7 +126,6 @@ internal struct X25519MLKemKey<TParameters> where TParameters : struct, IMLKemPa
 		WriteX25519Parts(ephemeral.Span, ciphertext, sharedSecret);
 	}
 
-	[SkipLocalsInit]
 	internal void Encapsulate(ReadOnlySpan<byte> ephemeralPrivateKey, ReadOnlySpan<byte> message, Span<byte> ciphertext, Span<byte> sharedSecret)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(ephemeralPrivateKey.Length, X25519Key.PrivateKeyLength, nameof(ephemeralPrivateKey));
@@ -141,7 +139,6 @@ internal struct X25519MLKemKey<TParameters> where TParameters : struct, IMLKemPa
 
 	// Both parts are computed before sharedSecret is written, since ciphertext may overlap it.
 	// The X25519 part fails just for an ephemeral key of small order, which the ciphertext alone decides.
-	[SkipLocalsInit]
 	internal bool TryDecapsulate(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
 	{
 		if (!HasDecapsulationKey)

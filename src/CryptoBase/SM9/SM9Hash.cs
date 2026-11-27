@@ -22,7 +22,6 @@ internal static class SM9Hash
 
 	// H1(ID ‖ hid, N), plain.
 	// The ID is public.
-	[SkipLocalsInit]
 	internal static void H1(ReadOnlySpan<byte> id, byte hid, out FieldElement<SM9Order> result)
 	{
 		Unsafe.SkipInit(out SM3KdfState kdf);
@@ -44,7 +43,6 @@ internal static class SM9Hash
 	}
 
 	// h from a state that has absorbed prefix ‖ Z. Ha may be secret, as it is in signing.
-	[SkipLocalsInit]
 	internal static void Finish(in SM3KdfState state, out FieldElement<SM9Order> result)
 	{
 		using CryptoBuffer<byte> hash = new(stackalloc byte[HashLength]);
@@ -55,7 +53,6 @@ internal static class SM9Hash
 	// (Ha mod M) + 1 for Ha of 40 big-endian bytes, by Barrett reduction: with Ha = x4·2^256 + L, q̂ = ⌊x4·μ/2^64⌋ = x4 + ⌊x4·MuLow/2^64⌋, of up to 65 bits, is at most q = ⌊Ha/M⌋, and as Ha/M − x4·μ/2^64 < L/M + x4·(2^320/M − μ)/2^64 < 1.75, at least q − 2.
 	// So Ha − q̂·M lies in [0, 3M), and two subtractions of M where they do not borrow leave Ha mod M, below 2^256.
 	// Neither the time nor the addresses depend on Ha.
-	[SkipLocalsInit]
 	internal static void Reduce(ReadOnlySpan<byte> hash, out FieldElement<SM9Order> result)
 	{
 		Debug.Assert(hash.Length is HashLength);

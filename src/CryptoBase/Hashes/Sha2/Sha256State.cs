@@ -128,7 +128,6 @@ internal partial struct Sha256State : ISha2SoftwareRounds<uint>
 		}
 	}
 
-	[SkipLocalsInit]
 	private void FinalizeTwoBlocks(ReadOnlySpan<byte> buffer, int index)
 	{
 		Debug.Assert(Avx2.IsSupported);
@@ -195,7 +194,6 @@ internal partial struct Sha256State : ISha2SoftwareRounds<uint>
 		bcXor = nextBcXor;
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private void ProcessBlocksSoftware(ReadOnlySpan<byte> source)
 	{

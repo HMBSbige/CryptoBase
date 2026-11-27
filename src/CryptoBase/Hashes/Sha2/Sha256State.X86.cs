@@ -2,7 +2,6 @@ namespace CryptoBase.Hashes.Sha2;
 
 internal partial struct Sha256State
 {
-	[SkipLocalsInit]
 	private void ProcessBlocksAvx2(ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(Avx2.IsSupported);

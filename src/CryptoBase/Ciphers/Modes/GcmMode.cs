@@ -168,7 +168,6 @@ public sealed class GcmMode<TBlockCipher> : IAeadCipher<GcmMode<TBlockCipher>> w
 		}
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void TransformWithTagMask(Vector128<byte> j0, out Vector128<byte> tagMask, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
@@ -204,7 +203,6 @@ public sealed class GcmMode<TBlockCipher> : IAeadCipher<GcmMode<TBlockCipher>> w
 		}
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private bool TryDecryptWithTagMask(ref GHash hash, Vector128<byte> j0, ref byte sourceStart, int length, ref byte tagStart, ref byte destinationStart, ref byte associatedDataStart, int associatedDataLength)
 	{
@@ -247,7 +245,6 @@ public sealed class GcmMode<TBlockCipher> : IAeadCipher<GcmMode<TBlockCipher>> w
 		return Vector128.LoadUnsafe(ref MemoryMarshal.GetReference(batch));
 	}
 
-	[SkipLocalsInit]
 	private static bool VerifyTag(ref GHash hash, Vector128<byte> tagMask, scoped ReadOnlySpan<byte> associatedData, scoped ReadOnlySpan<byte> ciphertext, scoped ReadOnlySpan<byte> tag)
 	{
 		Vector128<byte> lengthBlock = CreateLengthBlock(associatedData.Length, ciphertext.Length);

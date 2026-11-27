@@ -49,7 +49,6 @@ public sealed class PlatformSha256 : IHashAlgorithm<PlatformSha256>
 	}
 
 	/// <inheritdoc />
-	[SkipLocalsInit]
 	public static int HashData(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, HashLength, nameof(destination));
@@ -78,7 +77,6 @@ public sealed class PlatformSha256 : IHashAlgorithm<PlatformSha256>
 	}
 
 	/// <inheritdoc />
-	[SkipLocalsInit]
 	public void Reset()
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
@@ -98,7 +96,6 @@ public sealed class PlatformSha256 : IHashAlgorithm<PlatformSha256>
 	}
 
 	/// <inheritdoc />
-	[SkipLocalsInit]
 	public int GetCurrentHash(Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
@@ -121,7 +118,6 @@ public sealed class PlatformSha256 : IHashAlgorithm<PlatformSha256>
 	}
 
 	/// <inheritdoc />
-	[SkipLocalsInit]
 	public int GetHashAndReset(Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);

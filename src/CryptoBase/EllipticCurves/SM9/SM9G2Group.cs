@@ -34,14 +34,12 @@ internal static class SM9G2Group
 
 	// k·P2 by BaseTable.
 	// Neither the time nor the addresses depend on k.
-	[SkipLocalsInit]
 	internal static void MultiplyBase(in FieldElement<SM9Order> scalar, out SM9Point<SM9Fp2> result)
 	{
 		BaseTable.Multiply(in scalar, out result);
 	}
 
 	// k·P2 + addend for a public k and addend.
-	[SkipLocalsInit]
 	internal static void MultiplyBaseAddVariableTime(in FieldElement<SM9Order> scalar, in SM9Point<SM9Fp2> addend, out SM9Point<SM9Fp2> result)
 	{
 		BaseTable.MultiplyAddVariableTime(in scalar, in addend, out result);
@@ -53,7 +51,6 @@ internal static class SM9G2Group
 	// α(Q) = O then gives n·Q = O, and as N divides n while n is prime to h = 2p − N, the order of Q divides N.
 	// So α(Q) = O just for Q in G2, and the test takes one product by a 66-bit scalar, that of the kernel, and three Frobenius maps rather than a product by N.
 	// The time depends only on the public scalar a, so the point may be a private key; the multiples and images in its locals are erased.
-	[SkipLocalsInit]
 	internal static bool IsInSubgroupVariableTime(in SM9AffinePoint<SM9Fp2> point)
 	{
 		SM9Curve<SM9Fp2>.FromAffine(in point, out SM9Point<SM9Fp2> q);
@@ -72,7 +69,6 @@ internal static class SM9G2Group
 	}
 
 	// ψ(X : Y : Z) = (X̄·cx : Ȳ·cy : Z̄), each coordinate in place in result, which may be point, so that no local holds a copy of one.
-	[SkipLocalsInit]
 	internal static void Frobenius(in SM9Point<SM9Fp2> point, out SM9Point<SM9Fp2> result)
 	{
 		SM9Fp2.Conjugate(in point.X, out result.X);
@@ -83,7 +79,6 @@ internal static class SM9G2Group
 	}
 
 	// ψ(x, y) = (x̄·cx, ȳ·cy), as above.
-	[SkipLocalsInit]
 	internal static void Frobenius(in SM9AffinePoint<SM9Fp2> point, out SM9AffinePoint<SM9Fp2> result)
 	{
 		SM9Fp2.Conjugate(in point.X, out result.X);
@@ -93,14 +88,12 @@ internal static class SM9G2Group
 	}
 
 	// −ψ²(x, y) = (x·cx², y).
-	[SkipLocalsInit]
 	internal static void NegatedFrobeniusSquared(in SM9AffinePoint<SM9Fp2> point, out SM9AffinePoint<SM9Fp2> result)
 	{
 		result.Y = point.Y;
 		SM9Fp2.MultiplyByFp(in point.X, in SM9Fp.FromConstant(FrobeniusXSquaredLimbs), out result.X);
 	}
 
-	[SkipLocalsInit]
 	private static SM9AffinePoint<SM9Fp2> FromPlain()
 	{
 		SM9AffinePoint<SM9Fp2> point;

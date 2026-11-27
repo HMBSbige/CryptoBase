@@ -2,7 +2,6 @@ namespace CryptoBase.Hashes.Sha2;
 
 internal partial struct Sha256State
 {
-	[SkipLocalsInit]
 	private void ProcessBlocksAdvSimd(ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(AdvSimd.Arm64.IsSupported);

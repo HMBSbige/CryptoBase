@@ -133,7 +133,6 @@ internal partial struct P521Field58 : IUnsaturatedField<P521Field58, P521Field>
 	// The x64 registers do not hold all eighteen shifted limbs, so those of left stay in memory, in s_9 to s_17, as memory operands of the products.
 	// The columns go to s_0 to s_8 as they finish, and columns 9 to 17 fold in there by the steps of Reduce, so that only two columns are open at a time.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-	[SkipLocalsInit]
 	private static void MultiplyThroughMemory(in P521Field58 left, in P521Field58 right, out P521Field58 result)
 	{
 		Unsafe.SkipInit(out Scratch scratch);

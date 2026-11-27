@@ -71,7 +71,6 @@ internal partial struct Sha512State : ISha2SoftwareRounds<ulong>
 		AppendBlocks(source, bufferedLength, bytesNeeded);
 	}
 
-	[SkipLocalsInit]
 	private void AppendBlocks(ReadOnlySpan<byte> source, int bufferedLength, int bytesNeeded)
 	{
 		Span<byte> buffer = _buffer;
@@ -97,7 +96,6 @@ internal partial struct Sha512State : ISha2SoftwareRounds<ulong>
 		}
 	}
 
-	[SkipLocalsInit]
 	internal void Finalize(Span<byte> destination, int hashLengthInBytes)
 	{
 		Debug.Assert(destination.Length >= hashLengthInBytes);
@@ -139,7 +137,6 @@ internal partial struct Sha512State : ISha2SoftwareRounds<ulong>
 		}
 	}
 
-	[SkipLocalsInit]
 	private void FinalizeTwoBlocks(ReadOnlySpan<byte> buffer, int index)
 	{
 		Debug.Assert(X86Base.X64.IsSupported);
@@ -190,7 +187,6 @@ internal partial struct Sha512State : ISha2SoftwareRounds<ulong>
 		bcXor = nextBcXor;
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
 	private void ProcessBlocksSoftware(ReadOnlySpan<byte> source)
 	{

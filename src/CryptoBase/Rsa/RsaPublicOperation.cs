@@ -91,7 +91,6 @@ internal sealed class RsaPublicOperation
 	}
 
 	// Whether value, ModulusLength bytes big-endian, is below n; only for public values, as the time depends on the value.
-	[SkipLocalsInit]
 	internal bool IsBelowModulus(ReadOnlySpan<byte> value)
 	{
 		Debug.Assert(value.Length == ModulusLength);

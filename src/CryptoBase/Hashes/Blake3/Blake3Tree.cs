@@ -20,7 +20,6 @@ internal static class Blake3Tree
 		_ => Blake3Scalar.Degree
 	};
 
-	[SkipLocalsInit]
 	internal static void HashData(ReadOnlySpan<byte> source, ref readonly InlineArray8<uint> key, uint flags, Span<byte> destination, int maxDegreeOfParallelism, ThreadPoolHelperBudget budget)
 	{
 		Blake3Output output;
@@ -49,7 +48,6 @@ internal static class Blake3Tree
 	}
 
 	// Kept out of HashData, whose prologue would otherwise zero the span temporaries of the parallel call even for inputs of one chunk.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void RootFromSubtree(ReadOnlySpan<byte> source, ref readonly InlineArray8<uint> key, uint flags, int maxDegreeOfParallelism, ThreadPoolHelperBudget budget, out Blake3Output output)
 	{
@@ -142,7 +140,6 @@ internal static class Blake3Tree
 		}
 	}
 
-	[SkipLocalsInit]
 	internal static void CompressSubtreeToParentNode<TKernel>(ReadOnlySpan<byte> input, ref readonly InlineArray8<uint> key, ulong chunkCounter, uint flags, Span<byte> output) where TKernel : IBlake3Kernel
 	{
 		Debug.Assert(input.Length > ChunkLength);
@@ -165,7 +162,6 @@ internal static class Blake3Tree
 		chainingValues.Slice(0, 2 * OutLength).CopyTo(output);
 	}
 
-	[SkipLocalsInit]
 	private static int CompressSubtreeWide<TKernel>(ReadOnlySpan<byte> input, ref readonly InlineArray8<uint> key, ulong chunkCounter, uint flags, Span<byte> output) where TKernel : IBlake3Kernel
 	{
 		if (input.Length <= TKernel.Degree * ChunkLength)

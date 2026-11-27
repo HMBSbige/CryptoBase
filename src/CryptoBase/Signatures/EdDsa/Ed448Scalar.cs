@@ -28,7 +28,6 @@ internal static class Ed448Scalar
 	// then b < 2^243, 4δ·b < 2^469, and the second is below 2^470;
 	// then, from bit 446, b < 2^24, δ·b < 2^248, and the third is below 2^446 + 2^248 < 2L, which a conditional subtraction takes below L.
 	// Neither the time nor the addresses depend on h.
-	[SkipLocalsInit]
 	internal static void ReduceWide(ReadOnlySpan<byte> source, out FieldElement<Ed448Order> result)
 	{
 		Debug.Assert(source.Length is WideLength);

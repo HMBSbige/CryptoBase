@@ -12,7 +12,6 @@ internal static class HalfScalars<TOrder> where TOrder : unmanaged, IMontgomeryM
 	private const int Length = 4;
 
 	// v1 in first, |v2| in second and whether v2 < 0.
-	[SkipLocalsInit]
 	internal static void Split(in FieldElement<TOrder> scalar, out UInt128 first, out UInt128 second, out bool negative)
 	{
 		Debug.Assert(TOrder.LimbCount is Length && TOrder.BitLength is 256);

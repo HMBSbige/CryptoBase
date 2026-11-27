@@ -79,7 +79,6 @@ internal readonly struct Blake3Scalar : IBlake3Compressor, IBlake3XofKernel
 		Compress(in cv, ref block, blockLength, counter, flags, ref output, true);
 	}
 
-	[SkipLocalsInit]
 	public static void HashChunks(ref byte input, nuint length, ref readonly uint key, ulong counter, uint flags, ref byte output)
 	{
 		for (; length >= ChunkLength; length -= ChunkLength)

@@ -246,7 +246,6 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 	}
 
 	/// <inheritdoc />
-	[SkipLocalsInit]
 	public int ExportSubjectPublicKeyInfo(Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
@@ -290,7 +289,6 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 	}
 
 	/// <inheritdoc />
-	[SkipLocalsInit]
 	public int Sign(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
@@ -376,7 +374,6 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 	/// <exception cref="ArgumentException"><paramref name="plaintext" /> is too long, or <paramref name="destination" /> is too short.</exception>
 	/// <exception cref="NotSupportedException">The key does not support RSAES-OAEP with <typeparamref name="TCore" />, as for <see cref="GetMaxOaepPlaintextLength{TCore}" />, or <typeparamref name="TMgfCore" /> is longer than 64 bytes.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	[SkipLocalsInit]
 	public int EncryptOaep<TCore, TMgfCore>(ReadOnlySpan<byte> plaintext, Span<byte> destination, ReadOnlySpan<byte> label = default) where TCore : unmanaged, IHmacHashCore<TCore> where TMgfCore : unmanaged, IHmacHashCore<TMgfCore>
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
@@ -439,7 +436,6 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 	/// <exception cref="InvalidOperationException">The instance does not hold the private key.</exception>
 	/// <exception cref="NotSupportedException">The key does not support RSAES-OAEP with <typeparamref name="TCore" />, as for <see cref="GetMaxOaepPlaintextLength{TCore}" />, or <typeparamref name="TMgfCore" /> is longer than 64 bytes.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	[SkipLocalsInit]
 	public bool TryDecryptOaep<TCore, TMgfCore>(ReadOnlySpan<byte> ciphertext, Span<byte> destination, out int bytesWritten, ReadOnlySpan<byte> label = default) where TCore : unmanaged, IHmacHashCore<TCore> where TMgfCore : unmanaged, IHmacHashCore<TMgfCore>
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
@@ -483,7 +479,6 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 	}
 
 	// An instance that owns privateKey, whose public key must equal expectedPublicKey, an RSAPublicKey, unless it is empty; privateKey is disposed if this throws.
-	[SkipLocalsInit]
 	private static RsaKey Create(RsaPrivateOperation privateKey, byte[] algorithmIdentifier, int allowedAlgorithms, ReadOnlySpan<byte> expectedPublicKey)
 	{
 		try
@@ -523,7 +518,6 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 	}
 
 	// RSASSA-PKCS1-V1_5-SIGN (RFC 8017, Sec. 8.2.1) with a DigestInfo with NULL parameters; destination is at least k bytes long, and receives the signature only once it has been checked.
-	[SkipLocalsInit]
 	private static int SignPkcs1Core<THash>(RsaPrivateOperation privateKey, ReadOnlySpan<byte> digestInfo, ReadOnlySpan<byte> message, Span<byte> destination) where THash : unmanaged, IHashCore<THash>
 	{
 		int length = privateKey.PublicKey.ModulusLength;
@@ -537,7 +531,6 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 	}
 
 	// RSASSA-PSS-SIGN (RFC 8017, Sec. 8.1.1) with a salt that fits; destination as for RSASSA-PKCS1-v1_5.
-	[SkipLocalsInit]
 	private static int SignPssCore<THash>(RsaPrivateOperation privateKey, ReadOnlySpan<byte> message, ReadOnlySpan<byte> salt, Span<byte> destination) where THash : unmanaged, IHashCore<THash>
 	{
 		int length = privateKey.PublicKey.ModulusLength;
@@ -551,7 +544,6 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 	}
 
 	// RSASSA-PKCS1-V1_5-VERIFY (RFC 8017, Sec. 8.2.2), for a DigestInfo with NULL parameters or without them.
-	[SkipLocalsInit]
 	private bool VerifyPkcs1Core<THash>(ReadOnlySpan<byte> digestInfo, ReadOnlySpan<byte> digestInfoWithoutParameters, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature) where THash : unmanaged, IHashCore<THash>
 	{
 		// Steps 1 and 2: RSAVP1 (Sec. 5.2.2) on a signature as long as the modulus, whose representative is below it.
@@ -570,7 +562,6 @@ public sealed class RsaKey : ISignatureKey<RsaKey>
 	}
 
 	// RSASSA-PSS-VERIFY (RFC 8017, Sec. 8.1.2).
-	[SkipLocalsInit]
 	private bool VerifyPssCore<THash>(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature, int saltLength) where THash : unmanaged, IHashCore<THash>
 	{
 		// Steps 1 and 2a to 2b, as for RSASSA-PKCS1-v1_5; EMSA-PSS-VERIFY takes the I2OSP of step 2c.

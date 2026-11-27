@@ -59,7 +59,6 @@ public static class Tls12Prf<TMac> where TMac : class, IMacAlgorithm<TMac>
 	// A(1) = MAC(secret, label || seed) and the block is MAC(secret, A(1) || label || seed).
 	// The label and seed are copied before the output is written, so they may overlap it.
 	// The block goes through a scratch buffer when the output is short or overlaps the secret, so no call gets overlapping buffers.
-	[SkipLocalsInit]
 	private static void DeriveBlock(ReadOnlySpan<byte> secret, ReadOnlySpan<byte> label, ReadOnlySpan<byte> seed1, ReadOnlySpan<byte> seed2, Span<byte> output)
 	{
 		int macLength = TMac.MacLength;
@@ -88,7 +87,6 @@ public static class Tls12Prf<TMac> where TMac : class, IMacAlgorithm<TMac>
 	// A(i) = MAC(secret, A(i - 1)) with A(0) = label || seed, and block i = MAC(secret, A(i) || label || seed).
 	// The buffer holds A(i) || label || seed, so no append reads the output and the label and seed may overlap it.
 	// Create consumes the secret before the first block is written, so the secret may overlap the output too.
-	[SkipLocalsInit]
 	private static void DeriveBlocks(ReadOnlySpan<byte> secret, ReadOnlySpan<byte> label, ReadOnlySpan<byte> seed1, ReadOnlySpan<byte> seed2, Span<byte> output)
 	{
 		int macLength = TMac.MacLength;

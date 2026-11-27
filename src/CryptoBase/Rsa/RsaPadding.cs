@@ -46,7 +46,6 @@ internal static class RsaPadding
 
 	// EMSA-PSS-ENCODE (RFC 8017, Sec. 9.1.1) of mHash with MGF1, both with THash, and salt, for emBits = modBits − 1: EM fills the last emLen bytes of encoded, after a zero byte where emLen = k − 1.
 	// The caller has checked that emLen ≥ hLen + sLen + 2 (step 3).
-	[SkipLocalsInit]
 	internal static void EncodePss<THash>(ReadOnlySpan<byte> mHash, ReadOnlySpan<byte> salt, int modulusBits, Span<byte> encoded) where THash : unmanaged, IHashCore<THash>
 	{
 		int hashLength = THash.HashLength;
@@ -74,7 +73,6 @@ internal static class RsaPadding
 	}
 
 	// EMSA-PSS-VERIFY (RFC 8017, Sec. 9.1.2) of mHash with MGF1, both with THash, and sLen = saltLength, for emBits = modBits − 1, on the k bytes that RSAVP1 gives; encoded is changed.
-	[SkipLocalsInit]
 	internal static bool IsPssEncoding<THash>(ReadOnlySpan<byte> mHash, Span<byte> encoded, int modulusBits, int saltLength) where THash : unmanaged, IHashCore<THash>
 	{
 		int hashLength = THash.HashLength;
@@ -118,7 +116,6 @@ internal static class RsaPadding
 	}
 
 	// destination = Hash(0x00 × 8 ‖ mHash ‖ salt), the hash of M' (RFC 8017, Sec. 9.1.1, step 5), for a salt no longer than the hash.
-	[SkipLocalsInit]
 	private static void HashPrefixed<THash>(ReadOnlySpan<byte> mHash, ReadOnlySpan<byte> salt, Span<byte> destination) where THash : unmanaged, IHashCore<THash>
 	{
 		Span<byte> prefixed = stackalloc byte[8 + 2 * MaxHashLength].Slice(0, 8 + mHash.Length + salt.Length);
@@ -130,7 +127,6 @@ internal static class RsaPadding
 	}
 
 	// destination ^= MGF1(seed, destination.Length) with THash (RFC 8017, Appendix B.2.1); seed is as long as the hash.
-	[SkipLocalsInit]
 	private static void Mgf1Xor<THash>(ReadOnlySpan<byte> seed, Span<byte> destination) where THash : unmanaged, IHashCore<THash>
 	{
 		int hashLength = THash.HashLength;
@@ -151,7 +147,6 @@ internal static class RsaPadding
 
 	// destination ^= MGF1(seed, destination.Length) with THash (RFC 8017, Appendix B.2.1), for the secret inputs of RSAES-OAEP, with a seed of any length.
 	// Not Mgf1Xor: Hash would leave on the stack a core that holds the last block of the secret input and the hash, so this erases its cores and the mask.
-	[SkipLocalsInit]
 	internal static void Mgf1XorSecret<THash>(ReadOnlySpan<byte> seed, Span<byte> destination) where THash : unmanaged, IHashCore<THash>
 	{
 		int hashLength = THash.HashLength;

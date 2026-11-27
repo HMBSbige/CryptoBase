@@ -38,7 +38,6 @@ internal readonly struct Blake3Vector512x2 : IBlake3Kernel
 	}
 
 	// The two states take all 32 vector registers, so the steps read the message words from memory, through MessageByteOffsets512, kept in locals of this frame rather than in a buffer from stackalloc or the heap.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void Hash(ref byte input, ref readonly uint key, ulong counter, uint flags, ref byte output)
 	{

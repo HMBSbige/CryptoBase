@@ -24,7 +24,6 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 	}
 
 	/// <inheritdoc />
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static int HashData(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
@@ -101,7 +100,6 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 	}
 
 	/// <inheritdoc />
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public int GetCurrentHash(Span<byte> destination)
 	{
@@ -114,7 +112,6 @@ public sealed class HashAlgorithm<TCore> : IHashAlgorithm<HashAlgorithm<TCore>> 
 	}
 
 	/// <inheritdoc />
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public int GetHashAndReset(Span<byte> destination)
 	{

@@ -411,7 +411,6 @@ public sealed class SM2Key : ISignatureKey<SM2Key>
 	/// <exception cref="ArgumentException"><paramref name="destination" /> is too short.</exception>
 	/// <exception cref="InvalidOperationException">The instance does not hold the private key.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	[SkipLocalsInit]
 	public bool TryDecryptDer(ReadOnlySpan<byte> ciphertext, Span<byte> destination, out int bytesWritten)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);

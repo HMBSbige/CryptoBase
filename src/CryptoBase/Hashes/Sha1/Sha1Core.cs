@@ -38,7 +38,6 @@ public partial struct Sha1Core : IHmacHashCore<Sha1Core>
 	/// <inheritdoc />
 	public static int HmacBlockSize => BlockSizeInBytes;
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	static Sha1Core IHashCore<Sha1Core>.Create()
 	{
@@ -158,7 +157,6 @@ public partial struct Sha1Core : IHmacHashCore<Sha1Core>
 		ProcessBlocksSoftware(source);
 	}
 
-	[SkipLocalsInit]
 	private void ProcessBlocksSoftware(ReadOnlySpan<byte> source)
 	{
 		Unsafe.SkipInit(out InlineArray16<uint> schedule);

@@ -114,7 +114,6 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 	/// <remarks>The context should be hardcoded, globally unique and application-specific, such as <c>"example.com 2020-01-01 session tokens v1"u8</c>.</remarks>
 	/// <param name="context">The context string, usually UTF-8 encoded.</param>
 	/// <returns>A new initialized instance.</returns>
-	[SkipLocalsInit]
 	public static Blake3HashAlgorithm CreateDeriveKey(ReadOnlySpan<byte> context)
 	{
 		Blake3HashAlgorithm hasher = new();
@@ -186,7 +185,6 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 	/// <param name="destination">The buffer that receives the derived key; its length selects the key length.</param>
 	/// <param name="maxDegreeOfParallelism">The maximum number of threads, the calling thread included, or -1 for no limit.</param>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="maxDegreeOfParallelism" /> is 0 or less than -1.</exception>
-	[SkipLocalsInit]
 	public static void DeriveKey(ReadOnlySpan<byte> context, ReadOnlySpan<byte> keyMaterial, Span<byte> destination, int maxDegreeOfParallelism = 1)
 	{
 		ThreadPoolHelper.ThrowIfInvalidParallelism(maxDegreeOfParallelism);
@@ -297,7 +295,6 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 	/// <param name="destination">The buffer that receives the output.</param>
 	/// <exception cref="ArgumentOutOfRangeException">The output would end past byte 2^64 - 1 of the stream.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	[SkipLocalsInit]
 	public void Read(Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
@@ -336,7 +333,6 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 	/// <param name="destination">The buffer that receives the output; its length selects the output length.</param>
 	/// <exception cref="InvalidOperationException">The instance is reading; call <see cref="Reset" /> first.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	[SkipLocalsInit]
 	public void GetHashAndReset(Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
@@ -436,7 +432,6 @@ public sealed class Blake3HashAlgorithm : IHashAlgorithm<Blake3HashAlgorithm>, I
 		get => _state.InputLength - _readStart > (uint)ChunkModeInterval;
 	}
 
-	[SkipLocalsInit]
 	private ref readonly Blake3Output Output
 	{
 		get

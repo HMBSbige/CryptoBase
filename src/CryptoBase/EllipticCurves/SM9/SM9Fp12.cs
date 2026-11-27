@@ -17,7 +17,6 @@ internal struct SM9Fp12
 	// From the bounds of SM9Fp6.MultiplyWide, the coefficients of c0 lie in (−22B, 11B), and those of c1, whose first product takes the reduced sums rather than the sums themselves, in (−12B, 21B), within those of SM9Fp.ReduceWide, 128p² > 25B and 342p² > 67B.
 	// The three products are normalized first, so that their combinations keep small columns.
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
 	internal static void Multiply(in SM9Fp12 left, in SM9Fp12 right, out SM9Fp12 result)
 	{
 		SM9Fp6.MultiplyWide(in left.C0, in right.C0, out SM9Fp6Wide t0);
@@ -39,7 +38,6 @@ internal struct SM9Fp12
 	// With t = a0·a1, c0 = (a0 + a1)(a0 + v·a1) − t − v·t = a0² + v·a1² and c1 = 2t.
 	// Combining the reduced products costs no more than combining them unreduced, which needs normalized columns, and saves no reduction.
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
 	internal static void Square(in SM9Fp12 value, out SM9Fp12 result)
 	{
 		SM9Fp6.Multiply(in value.C0, in value.C1, out SM9Fp6 t);
@@ -59,7 +57,6 @@ internal struct SM9Fp12
 	// Each square of Fp4 is (x0² + u·x1², 2x0x1), three squares of Fp2.
 	// Other elements give wrong results.
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
 	internal static void CyclotomicSquare(in SM9Fp12 value, out SM9Fp12 result)
 	{
 		SquareFp4(in value.C0.C0, in value.C1.C1, out SM9Fp2 c0, out SM9Fp2 c1);
@@ -79,7 +76,6 @@ internal struct SM9Fp12
 	// value·l for a line l = l0 + l2·w² + l3·w³ = (l0 + l2·v) + l3·v·w, by Karatsuba over Fp6 with one reduction per coefficient: with A = f0·(l0 + l2·v) and B = f1·l3·v, c0 = A + v·B and c1 = (f0 + f1)(l0 + (l2 + l3)·v) − A − B, thirteen products of Fp2.
 	// With f0 + f1 and l2 + l3 reduced, the coefficients of c0 lie in (−10B, 6B) and those of c1 in (−7B, 11B) for reduced inputs, and the columns, each a sum of at most three of MultiplyBy01Wide, stay below 2^61.2 in magnitude.
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
 	internal static void MultiplyByLine(in SM9Fp12 value, in SM9Fp2 l0, in SM9Fp2 l2, in SM9Fp2 l3, out SM9Fp12 result)
 	{
 		SM9Fp6.MultiplyBy01Wide(in value.C0, in l0, in l2, out SM9Fp6Wide a);
@@ -98,7 +94,6 @@ internal struct SM9Fp12
 	// value·(l0 + l2·w² + w³), the form of a line of SM9PrecomputedLine at P: with value = g + h·w and L = l0 + l2·v, as w³ = v·w, it is (g·L + v²·h) + (v·g + h·L)·w, ten products of Fp2 by SM9Fp6.MultiplyBy01Wide, while v·g = (u·g2, g0, g1) and v²·h = (u·h1, u·h2, h0) take no product: they go into the sums before the reduction as values times R, each reduced once with them.
 	// For reduced inputs, a coefficient with a term u·x then lies in (−30.4p², 145p²) and (−10.2p², 71p²), and one with a term x in (−20.3p², 60.8p²) and [0, 71p²), within those of SM9Fp.ReduceWide, and the columns stay below 2^59.7 in magnitude.
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
 	internal static void MultiplyByNormalizedLine(in SM9Fp12 value, in SM9Fp2 l0, in SM9Fp2 l2, out SM9Fp12 result)
 	{
 		SM9Fp6.MultiplyBy01Wide(in value.C0, in l0, in l2, out SM9Fp6Wide a);
@@ -115,7 +110,6 @@ internal struct SM9Fp12
 	}
 
 	// value^(p⁶) = C0 − C1·w, the inverse of an element of the cyclotomic subgroup.
-	[SkipLocalsInit]
 	internal static void Conjugate(in SM9Fp12 value, out SM9Fp12 result)
 	{
 		Unsafe.SkipInit(out result);
@@ -124,7 +118,6 @@ internal struct SM9Fp12
 	}
 
 	// value^p: the coefficient f_i of w^i goes to f̄_i·γ_i with γ_i = w^(i(p − 1)) = u^(i(p − 1)/6), which lies in Fp.
-	[SkipLocalsInit]
 	internal static void Frobenius(in SM9Fp12 value, out SM9Fp12 result)
 	{
 		Unsafe.SkipInit(out result);
@@ -137,7 +130,6 @@ internal struct SM9Fp12
 	}
 
 	// value^(p²): f_i goes to f_i·w^(i(p² − 1)), as the p²-power Frobenius fixes Fp2; γ_3 is −1.
-	[SkipLocalsInit]
 	internal static void FrobeniusSquared(in SM9Fp12 value, out SM9Fp12 result)
 	{
 		Unsafe.SkipInit(out result);
@@ -150,7 +142,6 @@ internal struct SM9Fp12
 	}
 
 	// value^(p³): f_i goes to f̄_i·w^(i(p³ − 1)); γ_2 is −1 and γ_4 is 1.
-	[SkipLocalsInit]
 	internal static void FrobeniusCubed(in SM9Fp12 value, out SM9Fp12 result)
 	{
 		Unsafe.SkipInit(out result);
@@ -165,7 +156,6 @@ internal struct SM9Fp12
 
 	// (C0 − C1·w)/(C0² − v·C1²).
 	// 0 gives 0; the inversion takes constant time, and the intermediates are erased.
-	[SkipLocalsInit]
 	internal static void Invert(in SM9Fp12 value, out SM9Fp12 result)
 	{
 		SM9Fp6.Square(in value.C0, out SM9Fp6 t0);
@@ -181,14 +171,12 @@ internal struct SM9Fp12
 		t1.ZeroMemory();
 	}
 
-	[SkipLocalsInit]
 	internal static ulong AreEqual(in SM9Fp12 left, in SM9Fp12 right)
 	{
 		ulong equal = SM9Fp2.AreEqual(in left.C0.C0, in right.C0.C0) & SM9Fp2.AreEqual(in left.C0.C1, in right.C0.C1) & SM9Fp2.AreEqual(in left.C0.C2, in right.C0.C2);
 		return equal & SM9Fp2.AreEqual(in left.C1.C0, in right.C1.C0) & SM9Fp2.AreEqual(in left.C1.C1, in right.C1.C1) & SM9Fp2.AreEqual(in left.C1.C2, in right.C1.C2);
 	}
 
-	[SkipLocalsInit]
 	internal static void ConditionalSelect(ulong mask, in SM9Fp12 whenSet, in SM9Fp12 whenClear, out SM9Fp12 result)
 	{
 		Unsafe.SkipInit(out result);
@@ -197,7 +185,6 @@ internal struct SM9Fp12
 	}
 
 	// Writes the 384 bytes of GM/T 0044.1 §7.2.6 for value, high dimension first as GM/T 0044.5 §3.2 lists them: the plain coefficients of w⁵, w², w⁴, w¹, w³ and w⁰, each u-coefficient first.
-	[SkipLocalsInit]
 	internal static void Encode(in SM9Fp12 value, Span<byte> destination)
 	{
 		Debug.Assert(destination.Length is ByteLength);
@@ -213,7 +200,6 @@ internal struct SM9Fp12
 	// (x0 + x1·V)² = (x0² + u·x1², (x0 + x1)² − x0² − x1²), reduced once per coefficient.
 	// For reduced inputs x0² + u·x1² has coefficients in (−6B, B) and (−2B, 3B) and 2x0x1 in (−4B, 2B) and [0, 4B); the columns stay below 2^59.4 in magnitude.
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
 	private static void SquareFp4(in SM9Fp2 x0, in SM9Fp2 x1, out SM9Fp2 s0, out SM9Fp2 s1)
 	{
 		SM9Fp2.SquareWide(in x0, out SM9Fp2Wide t0);

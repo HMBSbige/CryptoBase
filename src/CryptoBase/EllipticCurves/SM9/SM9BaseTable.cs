@@ -71,7 +71,6 @@ internal sealed class SM9BaseTable<TField> where TField : unmanaged, ISM9Field<T
 	// Neither the time nor the addresses depend on k or G: each window reads all of its entries, takes the negation where the digit is negative, and keeps the sum only where the digit is not 0, whose lookup gives (0, 0), not a point.
 	// The complete formulas take every sum, the point at infinity included.
 	// The projective form of the result depends on k and not only on k·G, so a caller makes it affine or erases it.
-	[SkipLocalsInit]
 	internal void Multiply(in FieldElement<SM9Order> scalar, out SM9Point<TField> result)
 	{
 		Span<sbyte> digits = stackalloc sbyte[WindowCount];
@@ -97,7 +96,6 @@ internal sealed class SM9BaseTable<TField> where TField : unmanaged, ISM9Field<T
 	}
 
 	// k·G + addend for a public k, G and addend: the windows of digit 0 are skipped and the others read by index.
-	[SkipLocalsInit]
 	internal void MultiplyAddVariableTime(in FieldElement<SM9Order> scalar, in SM9Point<TField> addend, out SM9Point<TField> result)
 	{
 		Span<sbyte> digits = stackalloc sbyte[WindowCount];

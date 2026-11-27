@@ -20,7 +20,6 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 	internal bool HasPublicKey { readonly get; private set; }
 
 	// If drawing the key throws, the key stays as it was.
-	[SkipLocalsInit]
 	internal void GenerateKey()
 	{
 		using CryptoBuffer<byte> privateKey = new(stackalloc byte[PrivateKeyLength]);
@@ -93,7 +92,6 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 
 	// X448(k, 5) by the fixed-base multiplication on edwards448 and the 4-isogeny of RFC 7748 §4.2, which takes B to u = 5.
 	// The product is the identity, which maps to 0, only for the clamped k = 4L, whose X448(k, 5) is 0 as well.
-	[SkipLocalsInit]
 	internal static void DerivePublicKey(ReadOnlySpan<byte> privateKey, Span<byte> publicKey)
 	{
 		Debug.Assert(publicKey.Length is PublicKeyLength);
@@ -108,7 +106,6 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 	// X448(k, u) into sharedSecret, unless the result is all zeros: then false, with sharedSecret unchanged.
 	// The result is zero when the order of the peer point divides 4, or for a point of the curve when k is the clamped 4L; checking the result covers both.
 	// The peer key is read in full before sharedSecret is written, so the two may overlap.
-	[SkipLocalsInit]
 	internal static bool TryDeriveSharedSecret(ReadOnlySpan<byte> privateKey, ReadOnlySpan<byte> peerPublicKey, Span<byte> sharedSecret)
 	{
 		Debug.Assert(privateKey.Length is PrivateKeyLength && sharedSecret.Length >= SharedSecretLength);
@@ -141,7 +138,6 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 	// X448(k, 5) into publicKey and X448(k, u) into sharedSecret, for a peer key not of small order, with one inversion: 1/(X·z) gives 1/X for the isogeny u = (Y/X)² and 1/z for the ladder.
 	// Unless k is the clamped 4L, neither factor is 0: X is 0 only for the identity, and z only if L | k on the curve or L' | k on the twist, whose prime L' > 2^446 divides no clamped k.
 	// For 4L, false, with neither buffer written.
-	[SkipLocalsInit]
 	internal static bool TryDerivePublicKeyAndSharedSecret(ReadOnlySpan<byte> privateKey, ReadOnlySpan<byte> peerPublicKey, Span<byte> publicKey, Span<byte> sharedSecret)
 	{
 		Debug.Assert(peerPublicKey.Length is PublicKeyLength && publicKey.Length is PublicKeyLength && sharedSecret.Length is SharedSecretLength);
@@ -175,7 +171,6 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 
 	// As TryDerivePublicKeyAndSharedSecret, with X448(s, u) for AuthEncap's sender key s after X448(k, u) in sharedSecrets; 1/(X·z·z') gives all three inverses.
 	// z' is not 0, as the clamped s of a private key is not 4L.
-	[SkipLocalsInit]
 	internal static bool TryDerivePublicKeyAndSharedSecrets(ReadOnlySpan<byte> privateKey, ReadOnlySpan<byte> senderPrivateKey, ReadOnlySpan<byte> peerPublicKey, Span<byte> publicKey, Span<byte> sharedSecrets)
 	{
 		Debug.Assert(senderPrivateKey.Length is PrivateKeyLength && peerPublicKey.Length is PublicKeyLength && publicKey.Length is PublicKeyLength && sharedSecrets.Length is 2 * SharedSecretLength);
@@ -220,7 +215,6 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 	// X448(k, u) ‖ X448(k, u') into sharedSecrets, for a sender key u' not of small order, unless the first is all zeros: then false, with sharedSecrets unchanged.
 	// 1/(z·z') gives both inverses; z = 0, the one way for the first to fail, zeroes both results, and z' is not 0, as in TryDerivePublicKeyAndSharedSecret.
 	// The peer key is read in full before sharedSecrets is written, so the two may overlap.
-	[SkipLocalsInit]
 	internal static bool TryDeriveSharedSecrets(ReadOnlySpan<byte> privateKey, ReadOnlySpan<byte> peerPublicKey, ReadOnlySpan<byte> senderPublicKey, Span<byte> sharedSecrets)
 	{
 		Debug.Assert(privateKey.Length is PrivateKeyLength && senderPublicKey.Length is PublicKeyLength && sharedSecrets.Length >= 2 * SharedSecretLength);
@@ -335,7 +329,6 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 	}
 
 	// A key clamped to 4L, drawn with probability 2^−445, is drawn again; the branch reveals only that a discarded key was bad.
-	[SkipLocalsInit]
 	static void IDiffieHellmanKey<X448Key>.GenerateEphemeral(in X448Key publicKey, Span<byte> ephemeralPublicKey, Span<byte> sharedSecret)
 	{
 		Debug.Assert(publicKey.HasPublicKey);
@@ -350,7 +343,6 @@ internal struct X448Key : IDiffieHellmanKey<X448Key>
 	}
 
 	// As GenerateEphemeral, with the sender's shared secret after the ephemeral one, from the same inversion.
-	[SkipLocalsInit]
 	static void IDiffieHellmanKey<X448Key>.GenerateEphemeral(in X448Key publicKey, in X448Key sender, Span<byte> ephemeralPublicKey, Span<byte> sharedSecrets)
 	{
 		Debug.Assert(publicKey.HasPublicKey && sender.HasPrivateKey);

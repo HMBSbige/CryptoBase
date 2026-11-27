@@ -110,7 +110,6 @@ internal static class SM4BlockDriver<TKernel> where TKernel : struct, ISM4Kernel
 		}
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void ProcessPadded(int width, int count, ref uint rk, ref byte source, ref byte destination)
 	{

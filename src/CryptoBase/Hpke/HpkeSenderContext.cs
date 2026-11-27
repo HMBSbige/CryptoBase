@@ -231,7 +231,6 @@ public sealed class HpkeSenderContext : IDisposable
 		_disposed = true;
 	}
 
-	[SkipLocalsInit]
 	private static HpkeSenderContext Encapsulate<TKem>(TKem recipient, HpkeMode mode, HpkeKdfId kdf, HpkeAeadId aead, Span<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId) where TKem : class, IHpkeKem<TKem>
 	{
 		encapsulatedKey = SliceEncapsulatedKey(encapsulatedKey, TKem.CiphertextLength, info, psk, pskId);
@@ -241,7 +240,6 @@ public sealed class HpkeSenderContext : IDisposable
 		return Create(TKem.KemId, mode, kdf, aead, sharedSecret.Span, info, psk, pskId);
 	}
 
-	[SkipLocalsInit]
 	private static HpkeSenderContext AuthEncapsulate<TKem>(TKem recipient, TKem sender, HpkeMode mode, HpkeKdfId kdf, HpkeAeadId aead, Span<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId) where TKem : class, IHpkeAuthKem<TKem>
 	{
 		encapsulatedKey = SliceEncapsulatedKey(encapsulatedKey, TKem.CiphertextLength, info, psk, pskId);

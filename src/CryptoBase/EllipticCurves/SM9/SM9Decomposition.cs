@@ -33,7 +33,6 @@ internal static class SM9Decomposition
 	private static ReadOnlySpan<ulong> FrobeniusRound3 => [0x80F6F61A09BE79EE, 0xF80D28DF879C4CE6, 0x097BA41AE3EC39C3, 0x71C71C71C6B2FE2D];
 
 	// k = k1 + k2·λ (mod N), the parts in two's complement, each below 2^127 in magnitude.
-	[SkipLocalsInit]
 	internal static void DecomposeG1(in FieldElement<SM9Order> scalar, out UInt128 k1, out UInt128 k2)
 	{
 		ReadOnlySpan<ulong> k = FieldElement<SM9Order>.GetLimbs(in scalar);
@@ -45,7 +44,6 @@ internal static class SM9Decomposition
 	}
 
 	// k = Σ k_i·p^i (mod N) with every part non-negative: the rounded parts plus those of 3·(B0 + B1) = (12t + 3, 3t + 3, 3t, 3t + 3), itself ≡ 0, which lifts each above 0 and leaves k0 below 15.5t + 5 < 2^67 and the others below 5.5t + 4 < 2^66.
-	[SkipLocalsInit]
 	internal static void DecomposeFrobenius(in FieldElement<SM9Order> scalar, out UInt128 k0, out UInt128 k1, out UInt128 k2, out UInt128 k3)
 	{
 		ReadOnlySpan<ulong> k = FieldElement<SM9Order>.GetLimbs(in scalar);
@@ -95,7 +93,6 @@ internal static class SM9Decomposition
 	}
 
 	// ⌊(k·g + 2^319)/2^320⌋ modulo 2^128: limbs 5 and 6 of the sum.
-	[SkipLocalsInit]
 	private static UInt128 RoundedQuotient(ReadOnlySpan<ulong> k, ReadOnlySpan<ulong> g)
 	{
 		Span<ulong> product = stackalloc ulong[8];

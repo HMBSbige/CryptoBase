@@ -173,7 +173,6 @@ internal static class RsaKeyDer
 	}
 
 	// destination is at least GetRsaPublicKeyLength long.
-	[SkipLocalsInit]
 	internal static int WriteRsaPublicKey(RsaPublicOperation key, Span<byte> destination)
 	{
 		int offset = KeyInfoDer.WriteHeader(0x30, GetModulusIntegerLength(key) + GetExponentIntegerLength(key), destination);
@@ -239,7 +238,6 @@ internal static class RsaKeyDer
 		return GetIntegerLength(key.ModulusLength, key.ModulusBits % 8 is 0);
 	}
 
-	[SkipLocalsInit]
 	private static int GetExponentIntegerLength(RsaPublicOperation key)
 	{
 		Span<byte> exponent = stackalloc byte[key.ExponentLength];
@@ -254,7 +252,6 @@ internal static class RsaKeyDer
 		return offset + key.ModulusLength;
 	}
 
-	[SkipLocalsInit]
 	private static int WriteExponent(RsaPublicOperation key, Span<byte> destination)
 	{
 		Span<byte> exponent = stackalloc byte[key.ExponentLength];

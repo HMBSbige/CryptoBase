@@ -15,7 +15,6 @@ internal static class SM9GTPower
 
 	// value^k for value in GT.
 	// Neither the time nor the addresses depend on value or k, and the intermediates are erased.
-	[SkipLocalsInit]
 	internal static void Power(in SM9Fp12 value, in FieldElement<SM9Order> exponent, out SM9Fp12 result)
 	{
 		Span<SM9Fp12> table = stackalloc SM9Fp12[SM9FrobeniusRecoding.TableLength];
@@ -42,7 +41,6 @@ internal static class SM9GTPower
 
 	// The FixedTableLength entries of the combs of value in GT, and value⁻¹ for the correction.
 	// The time and the addresses do not depend on value, which may be secret.
-	[SkipLocalsInit]
 	internal static void BuildFixedTable(in SM9Fp12 value, Span<SM9Fp12> table, out SM9Fp12 inverse)
 	{
 		Debug.Assert(table.Length is FixedTableLength);
@@ -68,7 +66,6 @@ internal static class SM9GTPower
 
 	// value^k from the table of BuildFixedTable and value⁻¹.
 	// Neither the time nor the addresses depend on the base or k.
-	[SkipLocalsInit]
 	internal static void Power(ReadOnlySpan<SM9Fp12> table, in SM9Fp12 inverse, in FieldElement<SM9Order> exponent, out SM9Fp12 result)
 	{
 		Debug.Assert(table.Length is FixedTableLength);
@@ -118,7 +115,6 @@ internal static class SM9GTPower
 	}
 
 	// The eight products x·Π_(j≥1) (x^(p^j))^(u_j), u_j bit j − 1 of the index.
-	[SkipLocalsInit]
 	private static void BuildTable(in SM9Fp12 value, Span<SM9Fp12> table)
 	{
 		SM9Fp12.Frobenius(in value, out SM9Fp12 b1);
@@ -140,7 +136,6 @@ internal static class SM9GTPower
 	}
 
 	// Recodes the parts of k, with k0 made odd, and returns ulong.MaxValue if it was even.
-	[SkipLocalsInit]
 	internal static ulong Recode(in FieldElement<SM9Order> exponent, Span<byte> digits)
 	{
 		SM9Decomposition.DecomposeFrobenius(in exponent, out UInt128 k0, out UInt128 k1, out UInt128 k2, out UInt128 k3);
@@ -162,7 +157,6 @@ internal static class SM9GTPower
 	}
 
 	// Multiplies power by x⁻¹ where even is set: x⁻¹ is the conjugate of value, or value itself if it already is the inverse.
-	[SkipLocalsInit]
 	private static void Correct(ref SM9Fp12 power, ulong even, in SM9Fp12 value, bool isInverse = false)
 	{
 		SM9Fp12 inverse;

@@ -35,7 +35,6 @@ internal partial struct Sha512State
 		}
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private void ProcessBlockPairsAvx2(ReadOnlySpan<byte> source)
 	{
@@ -118,7 +117,6 @@ internal partial struct Sha512State
 		} while (Unsafe.IsAddressLessThan(ref sourceRef, ref sourceEnd));
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private void ProcessBlocksAvx2Single(ReadOnlySpan<byte> source)
 	{

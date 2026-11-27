@@ -30,7 +30,6 @@ internal static class CcmModeCore<TBlockCipher, TTag> where TBlockCipher : IBloc
 		return TryDecryptBuffered(cipher, nonce, source, tag, destination, associatedData);
 	}
 
-	[SkipLocalsInit]
 	private static void EncryptBuffered(TBlockCipher cipher, scoped ReadOnlySpan<byte> nonce, scoped ReadOnlySpan<byte> source, scoped Span<byte> destination, scoped Span<byte> tag, scoped ReadOnlySpan<byte> associatedData)
 	{
 		Span<byte> buffer = stackalloc byte[BufferedCcmBlockEncryptor<TBlockCipher>.BufferSize];
@@ -45,7 +44,6 @@ internal static class CcmModeCore<TBlockCipher, TTag> where TBlockCipher : IBloc
 		}
 	}
 
-	[SkipLocalsInit]
 	private static bool TryDecryptBuffered(TBlockCipher cipher, scoped ReadOnlySpan<byte> nonce, scoped ReadOnlySpan<byte> source, scoped ReadOnlySpan<byte> tag, scoped Span<byte> destination, scoped ReadOnlySpan<byte> associatedData)
 	{
 		Span<byte> buffer = stackalloc byte[BufferedCcmBlockEncryptor<TBlockCipher>.BufferSize];

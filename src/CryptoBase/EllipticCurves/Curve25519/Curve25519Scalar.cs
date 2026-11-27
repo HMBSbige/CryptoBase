@@ -13,7 +13,6 @@ internal readonly struct Curve25519Scalar : ICurve25519Kernel
 
 	// Each step takes the bit of k from 254 down to 0.
 	// The swap mask is the XOR of the bit with the one before, so only arithmetic on k decides which pair each step doubles.
-	[SkipLocalsInit]
 	public static void Ladder(ReadOnlySpan<byte> scalar, in Field25519 u, out Field25519 x, out Field25519 z)
 	{
 		Debug.Assert(scalar.Length is ScalarDigits.LimbCount * sizeof(ulong));
@@ -49,7 +48,6 @@ internal readonly struct Curve25519Scalar : ICurve25519Kernel
 	}
 
 	// The windows of EdwardsBaseTable need no doublings: window i adds d_i·2^(wi)·B, and the complete addition takes the identity that a digit of 0 selects.
-	[SkipLocalsInit]
 	public static void MultiplyBase(ReadOnlySpan<byte> scalar, out EdwardsPoint result)
 	{
 		Debug.Assert(scalar.Length is ScalarDigits.LimbCount * sizeof(ulong));
@@ -79,7 +77,6 @@ internal readonly struct Curve25519Scalar : ICurve25519Kernel
 
 	// Interleaves the NAFs of a and b.
 	// A doubling that no addition follows goes to projective coordinates, which need one product fewer than extended ones.
-	[SkipLocalsInit]
 	public static void DoubleScalarMultiplyVariableTime(ReadOnlySpan<byte> a, in EdwardsPoint point, ReadOnlySpan<byte> b, out EdwardsPoint result)
 	{
 		const int digitCount = 8 * Edwards25519.ScalarLength + 1;
@@ -148,7 +145,6 @@ internal readonly struct Curve25519Scalar : ICurve25519Kernel
 	}
 
 	// Each part of a has a NAF of its own, which needs only the doublings of one part, and [b]B follows from the windows of EdwardsBaseTable, which need none.
-	[SkipLocalsInit]
 	public static void DoubleScalarMultiplyVariableTime(ReadOnlySpan<byte> a, ReadOnlySpan<EdwardsNielsPoint> pointTable, ReadOnlySpan<byte> b, out EdwardsPoint result)
 	{
 		const int parts = EdwardsVariableTimePointTable.PartCount;

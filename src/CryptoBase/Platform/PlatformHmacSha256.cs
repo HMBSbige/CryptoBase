@@ -48,7 +48,6 @@ public sealed class PlatformHmacSha256 : IMacAlgorithm<PlatformHmacSha256>
 	}
 
 	/// <inheritdoc />
-	[SkipLocalsInit]
 	public static int Mac(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, MacLength, nameof(destination));
@@ -77,7 +76,6 @@ public sealed class PlatformHmacSha256 : IMacAlgorithm<PlatformHmacSha256>
 	}
 
 	/// <inheritdoc />
-	[SkipLocalsInit]
 	public void Reset()
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
@@ -97,7 +95,6 @@ public sealed class PlatformHmacSha256 : IMacAlgorithm<PlatformHmacSha256>
 	}
 
 	/// <inheritdoc />
-	[SkipLocalsInit]
 	public int GetCurrentMac(Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
@@ -120,7 +117,6 @@ public sealed class PlatformHmacSha256 : IMacAlgorithm<PlatformHmacSha256>
 	}
 
 	/// <inheritdoc />
-	[SkipLocalsInit]
 	public int GetMacAndReset(Span<byte> destination)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);

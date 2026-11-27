@@ -21,7 +21,6 @@ public sealed class Xof<TCore> : IXof<Xof<TCore>> where TCore : unmanaged, IXofC
 	}
 
 	/// <inheritdoc />
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void HashData(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
@@ -66,7 +65,6 @@ public sealed class Xof<TCore> : IXof<Xof<TCore>> where TCore : unmanaged, IXofC
 	}
 
 	/// <inheritdoc />
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public void GetCurrentHash(Span<byte> destination)
 	{
@@ -78,7 +76,6 @@ public sealed class Xof<TCore> : IXof<Xof<TCore>> where TCore : unmanaged, IXofC
 	}
 
 	/// <inheritdoc />
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public void GetHashAndReset(Span<byte> destination)
 	{

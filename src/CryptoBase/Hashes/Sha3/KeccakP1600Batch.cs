@@ -52,7 +52,6 @@ internal static class KeccakP1600Batch
 	}
 
 	// Two sponges of any rates in one run of the two-lane kernel.
-	[SkipLocalsInit]
 	internal static void Permute<TFirst, TSecond>(ref KeccakSponge<TFirst> first, ref KeccakSponge<TSecond> second) where TFirst : IKeccakRate where TSecond : IKeccakRate
 	{
 		if (MaxLanes < KeccakP1600Times2.Lanes)

@@ -10,7 +10,6 @@ internal static class GHashArm
 
 	internal static bool IsSupported => AesArm.IsSupported;
 
-	[SkipLocalsInit]
 	internal static void AppendPaddedSegments(ref Vector128<byte> accumulator, ref GHashKey key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
 	{
 		Debug.Assert(IsSupported);
@@ -71,7 +70,6 @@ internal static class GHashArm
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
 	private static void AppendPaddedSegmentsFolded(ref Vector128<byte> accumulator, in GHashArmPrecomputedKey powers, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
 	{
 		GHashArmFoldedState state = new(in powers, AdvSimd.Arm64.ReverseElementBits(accumulator));

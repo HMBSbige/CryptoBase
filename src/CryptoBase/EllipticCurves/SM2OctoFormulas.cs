@@ -47,7 +47,6 @@ internal static class SM2OctoFormulas
 	}
 
 	// The windows of Multiply, with the entries that TSelector selects.
-	[SkipLocalsInit]
 	private static void Multiply<TSelector>(in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> scalar, out JacobianPoint<SM2Field52> result) where TSelector : struct, ISelector
 	{
 		Span<sbyte> digits = stackalloc sbyte[SM2OddWindows.Count];
@@ -103,7 +102,6 @@ internal static class SM2OctoFormulas
 	// In window 0, 32a·P = −d_0·P just for K ≡ 0, so k = 0, whose opposite points give Z ≡ 0, the point at infinity, and 32a·P = d_0·P just for k ≡ 2d_0 (mod n), at TwiceLowDigit, where 2d_0·P = 64a·P, which DoubleTwice gives from the 16a·P that the chain holds before DoubleAdd, takes the place of the sum under a lane mask.
 	// ECGroup.Add takes the sums equal, opposite or at infinity.
 	// Neither the time nor the addresses depend on k, l, P or Q, and the intermediates are cleared.
-	[SkipLocalsInit]
 	internal static void MultiplyAdd(in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> scalar, in AffinePoint<SM2Field52> otherPoint, in FieldElement<SM2Order> otherScalar, out JacobianPoint<SM2Field52> result)
 	{
 		const int count = SM2OddWindows.Count;
@@ -161,7 +159,6 @@ internal static class SM2OctoFormulas
 	// Sets first to k·P and second to l·Q for points P and Q on the curve and odd k and l whose ChainLength digits SM2OddWindows.RecodeHalf gives: a chain in each half, k·P in lanes 0 to 3 and l·Q in lanes 4 to 7, by the windows of Multiply from the tables of BuildTables, with the entries read at the digits.
 	// The argument of Multiply for each of its chains holds here: no addition meets equal or opposite points or the point at infinity, and neither sum is the point at infinity.
 	// Every input is public, so the time and the addresses read depend on them.
-	[SkipLocalsInit]
 	internal static void MultiplyVariableTime(in AffinePoint<SM2Field52> point, ReadOnlySpan<sbyte> digits, in AffinePoint<SM2Field52> otherPoint, ReadOnlySpan<sbyte> otherDigits, out JacobianPoint<SM2Field52> first, out JacobianPoint<SM2Field52> second)
 	{
 		Debug.Assert(digits.Length is ChainLength && otherDigits.Length is ChainLength);
@@ -189,7 +186,6 @@ internal static class SM2OctoFormulas
 	// Writes (2j + 1)·P to entry j of table and (2j + 1)·Q to entry j of otherTable, in the layout of BuildTable: P and Q, 2P and 2Q by DoubleOnce on four lanes each, and then (2j + 1)·P = (2j − 1)·P + 2P beside the same for Q, one in each half, additions of points neither equal nor opposite, as 2j ± 1 and 2 are below n and 2j − 1 is odd.
 	// Each HalfCount multiples of a table go to Pack as they are complete, and Start takes the first steps in a frame of its own, so that this frame stays small.
 	// Neither the time nor the addresses depend on P or Q, and the intermediates are cleared.
-	[SkipLocalsInit]
 	internal static void BuildTables(in AffinePoint<SM2Field52> point, in AffinePoint<SM2Field52> otherPoint, Span<ulong> table, Span<ulong> otherTable)
 	{
 		Debug.Assert(table.Length == TableLength * EntryLength && otherTable.Length == TableLength * EntryLength);
@@ -219,7 +215,6 @@ internal static class SM2OctoFormulas
 	}
 
 	// P and Q, the state of both and the entry of 2P and 2Q for BuildTables, the intermediates cleared.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void Start(in AffinePoint<SM2Field52> point, in AffinePoint<SM2Field52> otherPoint, out SM2QuadState first, out SM2QuadState otherFirst, out SM2OctoState state, out SM2OctoEntry step)
 	{
@@ -269,7 +264,6 @@ internal static class SM2OctoFormulas
 
 	// Writes (2j + 1)·P to entry j of the table in the layout of SM2QuadFormulas.BuildTable: P, 2P, 3P = 2P + P and 4P on four lanes, then (j + 4)·P = j·P + 4P for j ≡ 1 and j ≡ 3 (mod 4) side by side, one in each half, additions of points neither equal nor opposite, as j is odd and j + 4 below n.
 	// Neither the time nor the addresses depend on P, and the intermediates are cleared.
-	[SkipLocalsInit]
 	internal static void BuildTable(in AffinePoint<SM2Field52> point, Span<ulong> table)
 	{
 		Debug.Assert(table.Length == TableLength * EntryLength);
@@ -334,7 +328,6 @@ internal static class SM2OctoFormulas
 	}
 
 	// The rounds of SM2QuadFormulas.AddState in each half.
-	[SkipLocalsInit]
 	private static void AddState(ref SM2OctoState state, in SM2OctoEntry entry)
 	{
 		Unsafe.SkipInit(out SM2Field29x8Avx512 left);
@@ -650,7 +643,6 @@ internal static class SM2OctoFormulas
 	}
 
 	// The rounds of SM2QuadFormulas.FromEntry in each half.
-	[SkipLocalsInit]
 	internal static void FromEntry(in SM2OctoEntry entry, out SM2OctoState state)
 	{
 		Unsafe.SkipInit(out state);
@@ -732,7 +724,6 @@ internal static class SM2OctoFormulas
 	}
 
 	// The rounds of SM2QuadFormulas.DoubleTwice in each half.
-	[SkipLocalsInit]
 	internal static void DoubleTwice(ref SM2OctoState state)
 	{
 		Unsafe.SkipInit(out SM2OctoScratch5 scratch);
@@ -1009,7 +1000,6 @@ internal static class SM2OctoFormulas
 
 	// mask and evenShifts are arguments so that each caller keeps how it loads them.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	[SkipLocalsInit]
 	private static void DoubleRoundsE0E1(ref SM2OctoState state, ref SM2Field29x8Avx512 left, ref SM2Field29x8Avx512 right, out SM2Field29x8Avx512 first, out SM2Field29x8Avx512 second, Vector512<ulong> mask, Vector512<ulong> evenShifts)
 	{
 		left.L0 = Avx512F.Permute4x64(state.P.L0, 0x44);
@@ -1063,7 +1053,6 @@ internal static class SM2OctoFormulas
 	}
 
 	// The rounds of SM2QuadFormulas.DoubleAdd in each half, without its masks: every lane takes the sum.
-	[SkipLocalsInit]
 	internal static void DoubleAdd(ref SM2OctoState state, in SM2OctoEntry entry)
 	{
 		Unsafe.SkipInit(out SM2Field29x8Avx512 left);

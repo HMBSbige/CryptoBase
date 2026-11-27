@@ -594,7 +594,6 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 
 	// For reduced inputs, the lanes of the left sums have limbs below 2^27, those of the extended rows below 2^28 and 2^28.33 for the sums, so each column of P0, P1 and Ps over six terms is below 2^59.4, 2^57.8 and 2^60.8, and those of c0 = P0 − 2P1 and c1 = Ps − P0 − P1 below 2^60.1 and 2^61.4 in magnitude.
 	// As values, c0 = Σ x0·y0 − 2x1·y1 lies in (−60.75p², 81p²), the wrapped y0 = 2(3p − y1) being below 6p, and c1 = Σ x0·y1 + x1·y0 in [0, 111.4p²), so c0 + 64p² and c1 are below 145p², which Reduce2 takes to below 7.5p and then to below 1.0001p.
-	[SkipLocalsInit]
 	private static void Product(ref ulong a, ref ulong b, ulong terms, ulong sources, int termCount, ref ulong result, ref ulong work)
 	{
 		ref ulong products = ref Unsafe.Add(ref work, Products);
@@ -1247,7 +1246,6 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 	// The operands of n are below 4.5p and 8.25p, with limbs below 2^27 and 2^28.33, so the columns of the products stay below 2^60.3 in magnitude.
 	// AVX-512 permutes the columns into those of T, whose values lie in (−45.6p², 67.5p²), T + 64p² below 132p², and columns below 2^62 in magnitude, and reduces them in ReduceCyclotomic;
 	// the narrower vectors reduce m and n, products of reduced inputs and their sums, as any product, and permute their rows in CombineCyclotomicRows.
-	[SkipLocalsInit]
 	internal static void CyclotomicSquare(ref SM9Fp12Lanes value, ref SM9Fp12Lanes result, ref SM9LaneScratch scratch)
 	{
 		ref ulong a = ref value[0];
@@ -1607,7 +1605,6 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 	}
 
 	// Each coefficient, conjugated as x0 + (3p − x1)·u where conjugate is set, times the factor of its lane: products below 3p², which Reduce2 takes to below 1.0001p.
-	[SkipLocalsInit]
 	private static void Scale(ref ulong value, ReadOnlySpan<ulong> factors, bool conjugate, ref ulong result, ref ulong work)
 	{
 		ref ulong products = ref Unsafe.Add(ref work, Products);
@@ -1739,7 +1736,6 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 	// The first products, of reduced inputs, are A = XY, B = Y², 3uC = 3Z·uZ, 3X² = X·3X and 2YZ = Y·2Z, whose operands are below 6.75p with limbs below 2^28: their values lie within (−31p², 56p²) and their columns below 2^60.2 in magnitude.
 	// 5·3uC is E = 3b'·C for b' = 5u, reduced once more.
 	// The second products are 2A·(B + 9p − 3E), (B + 3E)², 4B·2YZ, E², 3X²·(−xP) and 2YZ·yP, of operands below 10.0001p with limbs below 2^29 and sums below 2^29.3, and Y3 takes (B + F)² − 12E² before the reduction: their values lie within (−44p², 40p²) and their columns below 2^62.1 in magnitude, which the reduction takes.
-	[SkipLocalsInit]
 	internal static void DoublingStep(ref SM9Fp12Lanes point, ref SM9Fp12Lanes factors, ref SM9Fp12Lanes line, ref SM9LaneScratch scratch)
 	{
 		ref ulong t = ref point[0];
@@ -2204,7 +2200,6 @@ internal static partial class SM9Lanes<TVector> where TVector : unmanaged, ISM9V
 	// Each term then adds to c0 a value in (−2.0004p², 6.0006p²) and to c1 one in [0, 7.0007p²), so the columns stay below 2^60.2 in magnitude, and s − t − v·t and 2t lie in (−42p², 66p²), 64p² added.
 	// Vectors narrower than a row take the square as Multiply does, as their permutations would go through memory.
 	// The formula below is for vectors of a whole row, with 32 registers.
-	[SkipLocalsInit]
 	internal static void Square(ref SM9Fp12Lanes value, ref SM9Fp12Lanes result, ref SM9LaneScratch scratch)
 	{
 		if (TVector.Count < RowLength)

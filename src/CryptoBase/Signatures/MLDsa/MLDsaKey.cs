@@ -131,7 +131,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	[UnscopedRef]
 	private readonly ReadOnlySpan<byte> PrivateSeed => _privateSeed;
 
-	[SkipLocalsInit]
 	internal void GenerateKey()
 	{
 		using CryptoBuffer<byte> seed = new(stackalloc byte[SeedLength]);
@@ -281,7 +280,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	}
 
 	// ML-DSA.Sign (Algorithm 2), hedged with rnd from the system.
-	[SkipLocalsInit]
 	internal int Sign(ReadOnlySpan<byte> message, ReadOnlySpan<byte> context, Span<byte> destination)
 	{
 		ThrowIfCannotSign(context, destination);
@@ -307,7 +305,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	}
 
 	// HashML-DSA.Sign (Algorithm 4) of a hash that the caller computed, hedged with rnd from the system.
-	[SkipLocalsInit]
 	internal int SignPreHash(ReadOnlySpan<byte> hash, Span<byte> destination, string hashAlgorithmOid, ReadOnlySpan<byte> context)
 	{
 		ArgumentNullException.ThrowIfNull(hashAlgorithmOid);
@@ -326,7 +323,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	}
 
 	// HashML-DSA.Verify (Algorithm 5) of a hash that the caller computed.
-	[SkipLocalsInit]
 	internal bool VerifyPreHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, string hashAlgorithmOid, ReadOnlySpan<byte> context)
 	{
 		ArgumentNullException.ThrowIfNull(hashAlgorithmOid);
@@ -335,7 +331,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 		return Verify(PreHashDomain, oid, hash, signature, context);
 	}
 
-	[SkipLocalsInit]
 	private bool Verify(byte domain, ReadOnlySpan<byte> oid, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature, ReadOnlySpan<byte> context)
 	{
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(context.Length, MaxContextLength, nameof(context));
@@ -351,7 +346,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	}
 
 	// ML-DSA.Sign_internal (Algorithm 7) after μ, hedged with rnd from the system.
-	[SkipLocalsInit]
 	internal int SignMu(ReadOnlySpan<byte> mu, Span<byte> destination)
 	{
 		ThrowIfCannotSignMu(mu, destination);
@@ -480,7 +474,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	}
 
 	// ML-DSA.KeyGen_internal (Algorithm 6).
-	[SkipLocalsInit]
 	private void GenerateKey<TKernel>(ReadOnlySpan<byte> seed) where TKernel : IMLDsaKernel
 	{
 		Allocate(true);
@@ -510,7 +503,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	}
 
 	// Must not stop at the first invalid polynomial.
-	[SkipLocalsInit]
 	private bool ImportPrivateKey<TKernel>(ReadOnlySpan<byte> source) where TKernel : IMLDsaKernel
 	{
 		int etaLength = EtaLength;
@@ -619,7 +611,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 
 	// t ← NTT⁻¹(Â ∘ NTT(s1)) + s2 and (t1, t0) ← Power2Round(t) (Algorithm 6) row by row, into the encodings of t1 and t0 and into T0.
 	// s1 ends transformed.
-	[SkipLocalsInit]
 	private readonly void ComputePublicVector<TKernel>(Span<byte> t1Encoded, Span<byte> t0Encoded) where TKernel : IMLDsaKernel
 	{
 		int l = L;
@@ -698,7 +689,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	}
 
 	// μ ← H(tr ‖ M′, 64) (Algorithm 7) with M′ = IntegerToBytes(domain, 1) ‖ IntegerToBytes(|ctx|, 1) ‖ ctx ‖ oid ‖ message, oid empty for ML-DSA (Algorithm 2) and that of the hash for HashML-DSA (Algorithm 4).
-	[SkipLocalsInit]
 	private readonly void ComputeMu(byte domain, ReadOnlySpan<byte> context, ReadOnlySpan<byte> oid, ReadOnlySpan<byte> message, Span<byte> mu)
 	{
 		ReadOnlySpan<byte> header = [domain, (byte)context.Length];
@@ -713,7 +703,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	}
 
 	// The message is read in full before the signature is written, so the two may overlap.
-	[SkipLocalsInit]
 	private int Sign<TKernel>(byte domain, ReadOnlySpan<byte> context, ReadOnlySpan<byte> oid, ReadOnlySpan<byte> message, ReadOnlySpan<byte> randomness, Span<byte> destination) where TKernel : IMLDsaKernel
 	{
 		Span<byte> mu = stackalloc byte[MuLength];
@@ -727,7 +716,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	// Where a batch of ExpandMask has a free lane, c̃ of an attempt is hashed in it while the batch expands y of the next attempt, which goes to waste after the last;
 	// with fewer than four lanes, the batches of that y cost more than the hash saves.
 	// μ is read in full before the signature is written.
-	[SkipLocalsInit]
 	private int SignMu<TKernel>(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> randomness, Span<byte> signature) where TKernel : IMLDsaKernel
 	{
 		int k = K;
@@ -872,7 +860,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 
 	// ML-DSA.Verify_internal (Algorithm 8) after μ.
 	// The signature is public, so it may steer branches.
-	[SkipLocalsInit]
 	private bool VerifyMu<TKernel>(ReadOnlySpan<byte> mu, ReadOnlySpan<byte> signature) where TKernel : IMLDsaKernel
 	{
 		if (!Volatile.Read(in _hasPublicVector))
@@ -1004,7 +991,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 
 	// SampleInBall (Algorithm 29) of the whole of c̃, times sign in {−1, 1}.
 	// The squeezed bytes steer the rejection loop, as in the algorithm.
-	[SkipLocalsInit]
 	private static void SampleInBall(ReadOnlySpan<byte> commitmentHash, Span<int> c, int sign)
 	{
 		KeccakSponge<KeccakRate136> sponge = default;
@@ -1044,7 +1030,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 	// ExpandA (Algorithm 32): entry r · l + s, Â[r, s] = RejNTTPoly(ρ ‖ s ‖ r), is polynomial r · (l + 1) + s of Rows.
 	// Given the public key, tr ← H(pk, 64) is absorbed a block at a time in a free lane of the batches, as a batch permutation costs little more than a single one;
 	// a batch gives up a stream for it only while it fills every permutation of the batch.
-	[SkipLocalsInit]
 	private void ExpandMatrix<TKernel>(ReadOnlySpan<byte> publicKey) where TKernel : IMLDsaKernel
 	{
 		int l = L;
@@ -1120,7 +1105,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 		}
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void SampleRemaining<TKernel>(KeccakSponge<KeccakRate168> sponge, Span<int> polynomial, int sampled) where TKernel : IMLDsaKernel
 	{
@@ -1135,7 +1119,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 
 	// ExpandS (Algorithm 33): s1 from nonces 0 to l − 1 and s2 from l to l + k − 1, into secrets in that order.
 	// A stream that falls short squeezes on with its whole batch, so that no copy of its state, from which ρ′ could be recovered, is left outside the batch.
-	[SkipLocalsInit]
 	private static void ExpandSecrets<TKernel>(ReadOnlySpan<byte> seed, Span<int> secrets) where TKernel : IMLDsaKernel
 	{
 		int streams = L + K;
@@ -1175,7 +1158,6 @@ internal struct MLDsaKey<TParameters> where TParameters : struct, IMLDsaParamete
 
 	// ExpandMask (Algorithm 34): y[r] ← BitUnpack(H(ρ″ ‖ IntegerToBytes(κ + r, 2), 32c), γ1 − 1, γ1) with c = 1 + log2 γ1.
 	// Given a message, H(message, hash.Length) is absorbed a block at a time in a free lane of the batches.
-	[SkipLocalsInit]
 	internal static void ExpandMask<TKernel>(ReadOnlySpan<byte> seed, int kappa, Span<int> y, ReadOnlySpan<byte> message, Span<byte> hash) where TKernel : IMLDsaKernel
 	{
 		int zLength = ZLength;

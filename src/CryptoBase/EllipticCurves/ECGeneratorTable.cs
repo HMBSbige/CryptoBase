@@ -123,7 +123,6 @@ internal static class ECGeneratorTable<TCurve, TField, TOrder>
 	// The double has y1 ≠ 0, as the group has odd order.
 	// products[s] is the product of the denominators of sums 0 to s, so one inversion of the last gives the inverse of each denominator, from the last sum back.
 	// With I the inverse of the product up to s, I·products[s − 1] is the inverse of denominator s, and I·denominator s that of the product up to s − 1.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private static void AddRound(Span<ulong> windows, int half, Span<TField> products)
 	{

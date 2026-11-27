@@ -34,7 +34,6 @@ internal static partial class GHashX86
 		return IsSupported512 && parallelLength >= Vector512Threshold;
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void AppendPaddedSegments(ref Vector128<byte> accumulator, ref GHashKey key, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third)
 	{
@@ -78,7 +77,6 @@ internal static partial class GHashX86
 		accumulator = internalAccumulator.ReverseEndianness128();
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void AppendPaddedSegments<T>(ref Vector128<byte> accumulator, ref T powers, scoped ReadOnlySpan<byte> first, scoped ReadOnlySpan<byte> second, scoped ReadOnlySpan<byte> third) where T : struct, IGHashPowers
 	{

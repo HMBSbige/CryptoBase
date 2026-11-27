@@ -10,7 +10,6 @@ internal static class Edwards448Vector<TField> where TField : unmanaged, IEdward
 
 	// As Curve448Scalar.MultiplyBase, with each comb value after the first selected into the scratch by TField.SelectBase.
 	// The point stays in lanes until Untwist, which TwistedEdwards448 takes.
-	[SkipLocalsInit]
 	internal static void MultiplyBase(ReadOnlySpan<byte> scalar, out EdwardsPoint result)
 	{
 		Debug.Assert(scalar.Length is ScalarDigits.LimbCount * sizeof(ulong));
@@ -77,7 +76,6 @@ internal static class Edwards448Vector<TField> where TField : unmanaged, IEdward
 	}
 
 	// Interleaves the NAFs of a and b, as Curve448Scalar.DoubleScalarMultiplyVariableTime does, with the odd multiples of A brought to affine coordinates by one inversion, so that every addition takes the affine right operand of TField.Add.
-	[SkipLocalsInit]
 	internal static void DoubleScalarMultiplyVariableTime(ReadOnlySpan<byte> a, in EdwardsPoint point, ReadOnlySpan<byte> b, out EdwardsPoint result)
 	{
 		const int digitCount = 8 * Edwards448.ScalarLength + 1;
@@ -119,7 +117,6 @@ internal static class Edwards448Vector<TField> where TField : unmanaged, IEdward
 	}
 
 	// As Curve448Scalar.DoubleScalarMultiplyVariableTime with the table of EdwardsVariableTimePointTable.
-	[SkipLocalsInit]
 	internal static void DoubleScalarMultiplyVariableTime(ReadOnlySpan<byte> a, ReadOnlySpan<EdwardsAffinePoint> pointTable, ReadOnlySpan<byte> b, out EdwardsPoint result)
 	{
 		const int parts = EdwardsVariableTimePointTable.PartCount;

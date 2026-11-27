@@ -21,7 +21,6 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 	// Fold then adds up the lanes.
 	// The complete formulas take every sum, the point at infinity included.
 	// Neither the time nor the addresses depend on k or G, and the workspace is cleared.
-	[SkipLocalsInit]
 	internal static void MultiplyBase(SM9BaseTable<TField> table, in FieldElement<SM9Order> scalar, out SM9Point<TField> result)
 	{
 		Span<sbyte> digits = stackalloc sbyte[table.WindowCount];
@@ -32,7 +31,6 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 
 	// a·G + b·H for the tables of G and H, as the sum of what MultiplyBase gives for each: the windows of H follow those of G, so that both share the rounds and one fold.
 	// Neither the time nor the addresses depend on a, b, G or H.
-	[SkipLocalsInit]
 	internal static void MultiplyBase(SM9BaseTable<TField> first, in FieldElement<SM9Order> firstScalar, SM9BaseTable<TField> second, in FieldElement<SM9Order> secondScalar, out SM9Point<TField> result)
 	{
 		int split = first.WindowCount;
@@ -45,7 +43,6 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 
 	// The windows of the digits, those of first and then those of second, if any.
 	// The tables are read before the rounds, and each lane negates its entry where its digit is negative.
-	[SkipLocalsInit]
 	private static void MultiplyBase(SM9BaseTable<TField> first, SM9BaseTable<TField>? second, ReadOnlySpan<sbyte> digits, out SM9Point<TField> result)
 	{
 		int windows = digits.Length;
@@ -108,7 +105,6 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 	}
 
 	// k·G + addend for a public k and addend, as SM9BaseTable.MultiplyAddVariableTime gives it: as MultiplyBase, with lane 0 starting from the addend and the entries read by index.
-	[SkipLocalsInit]
 	internal static void MultiplyBaseAddVariableTime(SM9BaseTable<TField> table, in FieldElement<SM9Order> scalar, in SM9Point<TField> addend, out SM9Point<TField> result)
 	{
 		int windows = table.WindowCount;
@@ -195,7 +191,6 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 	// SM9Curve.ToAffine on the lanes, a row of eight points at a time: lane l takes points l, l + 8, …, the products of their Z go down the rows, and Montgomery's trick in TField over the eight totals inverts them all with one inversion, in constant time unless variableTime is set, for public points.
 	// None of the points may be the point at infinity; the lanes past the last point take 1.
 	// The workspace is cleared.
-	[SkipLocalsInit]
 	internal static void ToAffine(ReadOnlySpan<SM9Point<TField>> points, Span<SM9AffinePoint<TField>> result, bool variableTime)
 	{
 		Debug.Assert(points.Length > 0 && result.Length == points.Length);
@@ -334,7 +329,6 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 	// The multiples of the windows of SM9BaseTable from their bases B_w = 2^(width·w)·G, window w in lane w mod L in round ⌊w/L⌋: each lane adds its base to its last multiple, B, 2B, … up to windowLength·B, by Add, whose complete formulas double where the two are equal.
 	// Lanes past the last window take the first base of the round.
 	// The bases may be secret, and the workspace is cleared.
-	[SkipLocalsInit]
 	internal static void BuildMultiples(ReadOnlySpan<SM9Point<TField>> bases, int windowLength, Span<SM9Point<TField>> multiples)
 	{
 		int windows = bases.Length;
@@ -615,7 +609,6 @@ internal static class SM9PointLanes<TVector, TLanes, TField> where TVector : unm
 	}
 
 	// The right operand of AddSingle, (X, Y, 3b·Z, X + Y, Z, Y, 3b·Z, 3b·X), from a point with reduced coordinates, the sums and products reduced as TField gives them.
-	[SkipLocalsInit]
 	internal static void SplitEntry(in SM9Point<TField> point, ref ulong rows)
 	{
 		TLanes.Split(in point.X, ref rows, 0);

@@ -23,7 +23,6 @@ public struct Sha384Core : IHmacHashCore<Sha384Core>
 	/// <inheritdoc />
 	public static int HmacBlockSize => Sha512State.BlockSizeInBytes;
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	static Sha384Core IHashCore<Sha384Core>.Create()
 	{

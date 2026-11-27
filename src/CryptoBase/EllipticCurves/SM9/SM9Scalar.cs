@@ -60,7 +60,6 @@ internal readonly struct SM9Scalar : ISM9Kernel
 		table.Multiply(in scalar, out result);
 	}
 
-	[SkipLocalsInit]
 	public static void MultiplyBaseSumG1(SM9BaseTable<SM9Fp> first, in FieldElement<SM9Order> firstScalar, SM9BaseTable<SM9Fp> second, in FieldElement<SM9Order> secondScalar, out SM9Point<SM9Fp> result)
 	{
 		first.Multiply(in firstScalar, out result);

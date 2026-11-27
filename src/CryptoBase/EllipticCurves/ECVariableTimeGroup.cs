@@ -41,7 +41,6 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 	}
 
 	// As MultiplyAdd, by the NAF of u1 and u2 alone.
-	[SkipLocalsInit]
 	internal static void MultiplyAddWindows(in FieldElement<TOrder> u1, in AffinePoint<TField> point, in FieldElement<TOrder> u2, out JacobianPoint<TField> result)
 	{
 		Span<sbyte> baseDigits = stackalloc sbyte[DigitCount];
@@ -89,7 +88,6 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 
 	// As MultiplyAdd with the table.
 	// Each part of u2 has a NAF of its own, which needs only the doublings of one part; u1·G follows from the windows of ECGeneratorTable, which need none.
-	[SkipLocalsInit]
 	internal static void MultiplyAddWindows(in FieldElement<TOrder> u1, ReadOnlySpan<AffinePoint<TField>> pointTable, in FieldElement<TOrder> u2, out JacobianPoint<TField> result)
 	{
 		Debug.Assert(pointTable.Length == ECVariableTimePointTable<TCurve, TField, TOrder>.Length);
@@ -182,7 +180,6 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 	}
 
 	// Adds k·P to result from the windows of P as ECGeneratorTable lays them out, each entry read in place at a digit of ECGroup.RecodeWindows.
-	[SkipLocalsInit]
 	private static void AddWindows(ReadOnlySpan<ulong> windows, in FieldElement<TOrder> scalar, ref JacobianPoint<TField> result)
 	{
 		int windowCount = ECGeneratorTable<TCurve, TField, TOrder>.WindowCount;
@@ -218,7 +215,6 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 
 	// Sets multiples[j] to (2j + 1)·Q for a point Q on the curve.
 	// 3Q = 2Q + Q and then (j + 2)·Q = j·Q + 2Q are additions of two points that are neither equal, opposite nor at infinity, as j + 2 < n.
-	[SkipLocalsInit]
 	internal static void BuildOddMultiples(in AffinePoint<TField> point, Span<AffinePoint<TField>> multiples)
 	{
 		Debug.Assert(multiples.Length >= 2);
@@ -240,7 +236,6 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 	// For r below n, 0 included.
 	// As n < p < 2n, x mod n = r means x = r, or x = r + n where r + n < p.
 	// x = t means X = t·Z².
-	[SkipLocalsInit]
 	internal static bool XModOrderEquals(in JacobianPoint<TField> point, in FieldElement<TOrder> r)
 	{
 		Debug.Assert(TField.Modulus.Length == TOrder.LimbCount);
@@ -315,7 +310,6 @@ internal static class ECVariableTimeGroup<TCurve, TField, TOrder>
 	}
 
 	// sum + addend for points on the curve, either of them the point at infinity.
-	[SkipLocalsInit]
 	internal static void Add(ref JacobianPoint<TField> sum, in JacobianPoint<TField> addend)
 	{
 		if (addend.IsInfinity)

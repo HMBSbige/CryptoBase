@@ -34,7 +34,6 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 	// As there, the points of an addition are neither equal nor opposite except where the masks cover them and in window 0 for k = n − 6, where they are equal and the double takes the place of the sum.
 	// The table holds Jacobian points with their Z² and Z³ instead of affine ones, so it needs no inversion.
 	// Neither the time nor the addresses depend on k or P, and the intermediates are cleared.
-	[SkipLocalsInit]
 	internal static void Multiply(in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> scalar, out JacobianPoint<SM2Field52> result)
 	{
 		Debug.Assert(TField.LaneCount is 2 && Unsafe.SizeOf<TField>() == 9 * Unsafe.SizeOf<Vector128<ulong>>());
@@ -104,7 +103,6 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 
 	// Sets result to u1·G + u2·Q for u1 and u2 below n and a point Q on the curve, by the digits of ECVariableTimeGroup.MultiplyAdd: the NAF of u1 of width 8 over the affine odd multiples of G in ECVariableTimeGeneratorTable, which AddAffine adds, and that of u2 of width 5 over Q, 3Q, …, 15Q, kept as entries with their Z² and Z³.
 	// Every input is public, so the time and the branches depend on them.
-	[SkipLocalsInit]
 	internal static void MultiplyAdd(in FieldElement<SM2Order> u1, in AffinePoint<SM2Field52> point, in FieldElement<SM2Order> u2, out JacobianPoint<SM2Field52> result)
 	{
 		int count = ECVariableTimeGroup<SM2Curve, SM2Field52, SM2Order>.DigitCount;
@@ -169,7 +167,6 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 	// Z3 = Z1·Z2·H of Add is 0 just for H = 0, so for equal or opposite points, which its formulas do not cover; then the formulas of SM2Field52 tell them apart.
 	// The points are public, so the cases may branch.
 	// A point made of an entry goes through Reduce, as AddAffine takes its Y.
-	[SkipLocalsInit]
 	private static void AddVariableTime(ref SM2PairPoint<TField> total, ref bool infinity, in SM2PairEntry<TField> entry)
 	{
 		if (infinity)
@@ -202,7 +199,6 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 	}
 
 	// As AddVariableTime for an affine entry [x | y] that Reduce left, Y negated or not, by AddAffine, whose Z3 = Z1·H is 0 just for H = 0 as well.
-	[SkipLocalsInit]
 	private static void AddAffineVariableTime(ref SM2PairPoint<TField> total, ref bool infinity, in TField affine)
 	{
 		if (infinity)
@@ -249,7 +245,6 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 	// 2γ has limbs below 2^30 + 2^8, D + 4p = 3·4β + 4p − α² limbs below 5·2^29 + 2^8 against α, and X3 + 8p and Y3 + 8p limbs below 5·2^29 + 2^6.
 	// The point at infinity gives some point, which the masks discard.
 	// The point is read before result is written, so result may be the point.
-	[SkipLocalsInit]
 	private static void Double(in SM2PairPoint<TField> point, out SM2PairPoint<TField> result)
 	{
 		Unsafe.SkipInit(out TField left);
@@ -424,7 +419,6 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 	// H + 4p and R + 4p, in limbs below 3·2^29 + 2^6, go into the products carried, in limbs below 2^29 + 3;
 	// V − X3 + 4p has limbs below 6·2^29 + 2^8, X3 + 12p limbs below 7·2^29 + 2^6 and Y3 + 4p limbs below 3·2^29 + 2^6.
 	// The point is read before result is written, so result may be the point.
-	[SkipLocalsInit]
 	internal static void Add(in SM2PairPoint<TField> point, in SM2PairEntry<TField> entry, out SM2PairPoint<TField> result)
 	{
 		Unsafe.SkipInit(out TField left);
@@ -685,7 +679,6 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 	// point + (x2, y2) for an affine [x2 | y2] neither equal nor opposite to the point, and neither of them the point at infinity, with the formulas of Add for Z2 = 1, Y1 as Reduce leaves it: [Z1² | y2·Z1], [U2 | S2] = [x2·Z1² | y2·Z1·Z1²], [H² | R²] = [H·H | R·R] for [H | R] = [U2 − X1 | S2 − Y1], [H³ | V] = [H·H² | X1·H²] and [R·(V − X3) | Y1·H³], and Z3 = Z1·H, which needs only H, so that the rounds after it can overlap it.
 	// [H | R] + 4p, in limbs below 3·2^29 + 2^6, goes into the products carried, in limbs below 2^29 + 3, but for Z1·H;
 	// V − X3 + 4p has limbs below 6·2^29 + 2^8, X3 + 12p limbs below 7·2^29 + 2^6 and Y3 + 4p limbs below 3·2^29 + 2^6.
-	[SkipLocalsInit]
 	internal static void AddAffine(ref SM2PairPoint<TField> point, in TField affine)
 	{
 		Unsafe.SkipInit(out TField left);
@@ -906,7 +899,6 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 
 	// Writes j·P to entry j − 1 of the table: 2j·P = 2·(j·P) and (2j + 1)·P = 2j·P + P, an addition of points neither equal nor opposite, as 2j ± 1 < n.
 	// Only 1·P to 8·P stay as points, for the doublings: each pair 2j·P and (2j + 1)·P goes into the table as it comes, and 16·P with P.
-	[SkipLocalsInit]
 	internal static void BuildTable(in AffinePoint<SM2Field52> point, Span<ulong> table)
 	{
 		const int kept = TableLength / 2;
@@ -967,7 +959,6 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 	}
 
 	// Q, 3Q, …, 15Q: 3Q = 2Q + Q and (j + 2)·Q = j·Q + 2Q, additions of points neither equal nor opposite, as j + 2 < n.
-	[SkipLocalsInit]
 	internal static void BuildOddMultiples(in AffinePoint<SM2Field52> point, Span<SM2PairEntry<TField>> entries)
 	{
 		Span<SM2PairPoint<TField>> sums = stackalloc SM2PairPoint<TField>[OddLength];
@@ -992,7 +983,6 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 	}
 
 	// The entries of two points, Z² and Z³ of both from one product each.
-	[SkipLocalsInit]
 	private static void ToEntries(in SM2PairPoint<TField> low, in SM2PairPoint<TField> high, out SM2PairEntry<TField> lowEntry, out SM2PairEntry<TField> highEntry)
 	{
 		Unsafe.SkipInit(out TField z);
@@ -1217,7 +1207,6 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 
 	// The point (x, y, 1) of an affine [x | y].
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	[SkipLocalsInit]
 	private static void ToPoint(in TField affine, out SM2PairPoint<TField> result)
 	{
 		TField.One(out TField one);
@@ -1226,7 +1215,6 @@ internal static class SM2PairFormulas<TField> where TField : unmanaged, ISM2Fiel
 
 	// z holds Z in its upper lane, as CubeZ and one do.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	[SkipLocalsInit]
 	private static void ToPoint(in TField xy, in TField z, out SM2PairPoint<TField> result)
 	{
 		Unsafe.SkipInit(out result);

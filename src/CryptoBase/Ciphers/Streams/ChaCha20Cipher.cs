@@ -57,7 +57,6 @@ public class ChaCha20Cipher : SnuffleCipher
 	/// On failure, <paramref name="destination" /> remains unchanged.
 	/// </remarks>
 	/// <exception cref="ArgumentOutOfRangeException">A buffer has the wrong length.</exception>
-	[SkipLocalsInit]
 	public static void GenerateBlock(ReadOnlySpan<byte> key, ReadOnlySpan<byte> nonce, uint counter, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(key.Length, KeySize, nameof(key));

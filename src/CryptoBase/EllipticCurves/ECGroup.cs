@@ -31,7 +31,6 @@ internal static class ECGroup<TCurve, TField, TOrder>
 	// Any left, equal, opposite or at infinity, and an affine right, which cannot be the point at infinity.
 	// Masks take the right where the left is at infinity and the double where the points are equal.
 	// The result may be the left: it is written only after the last read of the inputs.
-	[SkipLocalsInit]
 	internal static void Add(in JacobianPoint<TField> left, in AffinePoint<TField> right, out JacobianPoint<TField> result)
 	{
 		ulong equal = AddDistinct(in left, in right, out JacobianPoint<TField> sum);
@@ -44,7 +43,6 @@ internal static class ECGroup<TCurve, TField, TOrder>
 	// Masks take the double where they are equal and the other point where one is at infinity.
 	// The result may be either input: it is written only after the last read of them.
 	// The sums on the stack are cleared.
-	[SkipLocalsInit]
 	internal static void Add(in JacobianPoint<TField> left, in JacobianPoint<TField> right, out JacobianPoint<TField> result)
 	{
 		ulong equal = AddDistinct(in left, in right, out JacobianPoint<TField> sum);
@@ -128,7 +126,6 @@ internal static class ECGroup<TCurve, TField, TOrder>
 
 	// As MultiplyBase, k·P from the windows of P as ECGeneratorTable lays them out.
 	// The argument below deals with the scalars mod n alone, so it holds for any point of the group, which has prime order n.
-	[SkipLocalsInit]
 	internal static void MultiplyFixedWindows(ReadOnlySpan<ulong> windows, in FieldElement<TOrder> scalar, out JacobianPoint<TField> result)
 	{
 		Debug.Assert(windows.Length == ECGeneratorTable<TCurve, TField, TOrder>.Length);
@@ -180,7 +177,6 @@ internal static class ECGroup<TCurve, TField, TOrder>
 	}
 
 	// As Multiply, by the windows of BuildMultiples alone.
-	[SkipLocalsInit]
 	internal static void MultiplyWindows(in AffinePoint<TField> point, in FieldElement<TOrder> scalar, out JacobianPoint<TField> result)
 	{
 		Span<sbyte> digits = stackalloc sbyte[DigitCount(WindowWidth)];
@@ -233,7 +229,6 @@ internal static class ECGroup<TCurve, TField, TOrder>
 	// Sets result to k·P + l·Q for points P and Q on the curve and k and l below n, by the kernels of TCurve where it has them and Multiply of each and Add otherwise.
 	// Neither the time nor the addresses depend on k, l, P or Q.
 	// As with MultiplyBase, the Jacobian form depends on k and l, so for secret ones use TryMultiplyAddEncode, which clears it.
-	[SkipLocalsInit]
 	internal static void MultiplyAdd(in AffinePoint<TField> point, in FieldElement<TOrder> scalar, in AffinePoint<TField> otherPoint, in FieldElement<TOrder> otherScalar, out JacobianPoint<TField> result)
 	{
 		if (TCurve.TryMultiplyAdd(in point, in scalar, in otherPoint, in otherScalar, out result))
@@ -251,7 +246,6 @@ internal static class ECGroup<TCurve, TField, TOrder>
 	// Sets multiples[j − 1] to j·P for a point P on the curve.
 	// No j·P is the point at infinity, as j ≤ multiples.Length < n, so each has an affine form.
 	// Every caller of Multiply passes a public P, but the inversion takes constant time and the intermediates are cleared all the same, so neither the time nor the addresses depend on P.
-	[SkipLocalsInit]
 	internal static void BuildMultiples(in AffinePoint<TField> point, Span<AffinePoint<TField>> multiples)
 	{
 		Debug.Assert(multiples.Length >= 2);
@@ -314,7 +308,6 @@ internal static class ECGroup<TCurve, TField, TOrder>
 	// For a point P on the curve and k in [1, n − 1], writes the encoding of k·G to encoded and the x-coordinate of k·P to x.
 	// Neither product is the point at infinity, as the group has prime order n, so one inversion of the product of their Z gives both Z⁻¹.
 	// Neither the time nor the addresses depend on k or P, and the intermediates are cleared.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void MultiplyEncodeExportX(in AffinePoint<TField> point, in FieldElement<TOrder> scalar, Span<byte> encoded, Span<byte> x)
 	{
@@ -351,7 +344,6 @@ internal static class ECGroup<TCurve, TField, TOrder>
 	// For a point P on the curve and k in [1, n − 1], writes the encodings of k·G and k·P, neither of which is the point at infinity, as the group has prime order n.
 	// One inversion serves both.
 	// Neither the time nor the addresses depend on k or P, and the intermediates are cleared.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void MultiplyEncode(in AffinePoint<TField> point, in FieldElement<TOrder> scalar, Span<byte> encodedBase, Span<byte> encodedProduct)
 	{
@@ -362,7 +354,6 @@ internal static class ECGroup<TCurve, TField, TOrder>
 	}
 
 	// As above, from the table of P.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void MultiplyEncode(ECPointTable<TCurve, TField, TOrder> table, in FieldElement<TOrder> scalar, Span<byte> encodedBase, Span<byte> encodedProduct)
 	{
@@ -373,7 +364,6 @@ internal static class ECGroup<TCurve, TField, TOrder>
 
 	// For a point P on the curve and k below n, writes the encoding of k·P.
 	// Returns false, leaving destination unchanged, if k·P is the point at infinity; the return value reveals that anyway, so it may decide a branch.
-	[SkipLocalsInit]
 	internal static bool TryMultiplyEncode(in AffinePoint<TField> point, in FieldElement<TOrder> scalar, Span<byte> destination)
 	{
 		Multiply(in point, in scalar, out JacobianPoint<TField> product);
@@ -383,7 +373,6 @@ internal static class ECGroup<TCurve, TField, TOrder>
 	// For the table of a point P, a point Q on the curve and k and l below n, writes the encoding of k·P + l·Q.
 	// Returns false, leaving destination unchanged, if that is the point at infinity; the return value reveals that anyway, so it may decide a branch.
 	// Neither the time nor the addresses depend on k, l, P or Q, and the intermediates are cleared.
-	[SkipLocalsInit]
 	internal static bool TryMultiplyAddEncode(ECPointTable<TCurve, TField, TOrder> table, in FieldElement<TOrder> scalar, in AffinePoint<TField> point, in FieldElement<TOrder> otherScalar, Span<byte> destination)
 	{
 		MultiplyFixed(table, in scalar, out JacobianPoint<TField> first);
@@ -395,7 +384,6 @@ internal static class ECGroup<TCurve, TField, TOrder>
 	}
 
 	// As above, for points P and Q on the curve.
-	[SkipLocalsInit]
 	internal static bool TryMultiplyAddEncode(in AffinePoint<TField> point, in FieldElement<TOrder> scalar, in AffinePoint<TField> otherPoint, in FieldElement<TOrder> otherScalar, Span<byte> destination)
 	{
 		MultiplyAdd(in point, in scalar, in otherPoint, in otherScalar, out JacobianPoint<TField> sum);
@@ -404,7 +392,6 @@ internal static class ECGroup<TCurve, TField, TOrder>
 
 	// Writes the encoding of point and returns true, or returns false, leaving destination unchanged, for the point at infinity; clears point and the intermediates either way.
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	[SkipLocalsInit]
 	private static bool TryEncode(ref JacobianPoint<TField> point, Span<byte> destination)
 	{
 		bool valid = TField.IsZero(in point.Z) is 0;
@@ -421,7 +408,6 @@ internal static class ECGroup<TCurve, TField, TOrder>
 	}
 
 	// The encodings of the two products, neither the point at infinity, with one inversion; clears them and the intermediates.
-	[SkipLocalsInit]
 	private static void EncodeProducts(Span<JacobianPoint<TField>> products, Span<byte> encodedBase, Span<byte> encodedProduct)
 	{
 		Span<AffinePoint<TField>> affine = stackalloc AffinePoint<TField>[2];
@@ -513,7 +499,6 @@ internal static class ECGroup<TCurve, TField, TOrder>
 	}
 
 	// point must not be the point at infinity.
-	[SkipLocalsInit]
 	internal static void ReduceX(in JacobianPoint<TField> point, out FieldElement<TOrder> result)
 	{
 		Debug.Assert(TField.ByteLength == TOrder.ByteLength);
@@ -631,7 +616,6 @@ internal static class ECGroup<TCurve, TField, TOrder>
 	// c is 1 just if k + H ≥ 2^N, so just if k exceeds the largest such sum, (2^(w − 1) − 1)·(2^N − 1)/(2^w − 1).
 	// Then the windows of k + H − n, below 2^N, give the digits of k − n, so that k ≡ Σ d_i·2^(wi) (mod n) either way.
 	// n is subtracted under a mask of the carry, and only i decides which limbs are read, so neither the time nor the addresses depend on k.
-	[SkipLocalsInit]
 	internal static void RecodeSpanning(in FieldElement<TOrder> scalar, int width, Span<sbyte> digits)
 	{
 		// Digits from −2^(w − 1) must fit in an sbyte.

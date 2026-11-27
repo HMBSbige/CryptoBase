@@ -12,7 +12,6 @@ internal static class SM9G1
 
 	// The form must be 04 ‖ x ‖ y with x and y below p and the point on the curve.
 	// The checks branch on whether the encoding is valid alone, so the input may be a private key, whose coordinates in plain form are erased.
-	[SkipLocalsInit]
 	internal static bool TryDecode(ReadOnlySpan<byte> source, out SM9AffinePoint<SM9Fp> result)
 	{
 		if (source.Length != EncodedLength || source[0] is not 0x04)
@@ -76,7 +75,6 @@ internal static class SM9G1
 
 	// a·P1 + b·Q for Q of G1, from the table of Q if there is one, which must be that of point; returns ulong.MaxValue, with result (0, 0), if the sum is the point at infinity, and 0 otherwise.
 	// Neither the time nor the addresses depend on a, b or Q, and the projective products are erased.
-	[SkipLocalsInit]
 	internal static ulong MultiplyBaseSum(in FieldElement<SM9Order> baseScalar, in SM9AffinePoint<SM9Fp> point, SM9BaseTable<SM9Fp>? table, in FieldElement<SM9Order> scalar, out SM9AffinePoint<SM9Fp> result)
 	{
 		Unsafe.SkipInit(out SM9Point<SM9Fp> sum);

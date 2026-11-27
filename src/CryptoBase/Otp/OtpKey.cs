@@ -35,7 +35,6 @@ internal struct OtpKey<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 	}
 
 	// Computes every counter from first to last, so the time does not reveal which one matched; the first match is returned.
-	[SkipLocalsInit]
 	internal readonly bool Verify(ulong first, ulong last, OtpCodeFormat format, ReadOnlySpan<char> code, out ulong matched)
 	{
 		Debug.Assert(first <= last);
@@ -74,7 +73,6 @@ internal struct OtpKey<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 	}
 
 	// The 31-bit integer of RFC 4226 section 5.3, with the offset taken from the last byte as RFC 6238 does for longer HMACs.
-	[SkipLocalsInit]
 	private readonly uint Truncate(ulong counter)
 	{
 		Span<byte> message = stackalloc byte[sizeof(ulong)];

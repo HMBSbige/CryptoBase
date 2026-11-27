@@ -18,7 +18,6 @@ public static class SM3Kdf
 	/// Its length selects how many bytes are derived.
 	/// </param>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="output" /> is empty.</exception>
-	[SkipLocalsInit]
 	public static void DeriveKey(ReadOnlySpan<byte> secret, Span<byte> output)
 	{
 		ArgumentOutOfRangeException.ThrowIfZero(output.Length, nameof(output));

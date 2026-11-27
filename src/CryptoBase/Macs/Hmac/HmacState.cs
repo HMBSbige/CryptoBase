@@ -22,7 +22,6 @@ internal struct HmacState<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 	private TCore _outerSeed;
 	private TCore _innerState;
 
-	[SkipLocalsInit]
 	internal void Initialize(ReadOnlySpan<byte> key, bool reuseSeeds)
 	{
 		using CryptoBuffer<byte> keyBlock = new(stackalloc byte[TCore.HmacBlockSize + (UseDirectKeyPads ? TCore.HashLength : 0)]);
@@ -72,7 +71,6 @@ internal struct HmacState<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 		_innerState = _innerSeed;
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal readonly int GetCurrentMac(Span<byte> destination)
 	{
@@ -93,7 +91,6 @@ internal struct HmacState<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 	}
 
 	// Starts from the seeds and leaves the state unchanged, so concurrent calls on a shared state are safe.
-	[SkipLocalsInit]
 	internal readonly int MacFromSeeds(ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		Debug.Assert(destination.Length >= TCore.HashLength);
@@ -121,7 +118,6 @@ internal struct HmacState<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 			: GetMacAndResetSoftware(destination);
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private int GetMacAndResetSoftware(Span<byte> destination)
 	{
@@ -141,7 +137,6 @@ internal struct HmacState<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 		}
 	}
 
-	[SkipLocalsInit]
 	internal int GetMacAndResetDestructive(Span<byte> destination)
 	{
 		Debug.Assert(destination.Length >= TCore.HashLength);
@@ -166,7 +161,6 @@ internal struct HmacState<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 		return FinalizeMac(ref _innerState, ref _outerSeed, destination);
 	}
 
-	[SkipLocalsInit]
 	internal static int Mac(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, TCore.HashLength, nameof(destination));
@@ -219,7 +213,6 @@ internal struct HmacState<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 		return TCore.HashLength;
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void NormalizeKey(ReadOnlySpan<byte> key, Span<byte> keyBlock)
 	{
@@ -262,7 +255,6 @@ internal struct HmacState<TCore> where TCore : unmanaged, IHmacHashCore<TCore>
 		outerSeed.Append(keyBlock);
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static ReadOnlySpan<byte> NormalizeKeyForDirectPads(ReadOnlySpan<byte> key, Span<byte> hashBuffer)
 	{

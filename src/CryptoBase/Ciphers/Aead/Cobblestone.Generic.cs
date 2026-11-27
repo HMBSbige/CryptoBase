@@ -102,7 +102,6 @@ internal static class Cobblestone<TCipher> where TCipher : class, ICobblestoneCi
 	/// <summary>
 	/// Derives the keys of a new message from a validated key and writes its header; the inputs are read before the header is written, so they may overlap it.
 	/// </summary>
-	[SkipLocalsInit]
 	private static CobblestoneKeys DeriveEncryptor(ReadOnlySpan<byte> key, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> context, Span<byte> header, bool platform)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(salt.Length, SaltSize, nameof(salt));
@@ -119,7 +118,6 @@ internal static class Cobblestone<TCipher> where TCipher : class, ICobblestoneCi
 	/// <summary>
 	/// Derives the keys of the message that starts with <paramref name="header" />, or fails when its commitment does not match.
 	/// </summary>
-	[SkipLocalsInit]
 	private static bool TryDeriveDecryptor(ReadOnlySpan<byte> key, ReadOnlySpan<byte> context, ReadOnlySpan<byte> header, bool platform, out CobblestoneKeys keys)
 	{
 		Debug.Assert(header.Length is HeaderSize);
@@ -157,7 +155,6 @@ internal static class Cobblestone<TCipher> where TCipher : class, ICobblestoneCi
 		return okm.Slice(okm.Length - CommitmentSize);
 	}
 
-	[SkipLocalsInit]
 	private static void Expand(ReadOnlySpan<byte> key, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> context, Span<byte> output)
 	{
 		ReadOnlySpan<byte> prefix = TCipher.InfoPrefix;

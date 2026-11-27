@@ -317,7 +317,6 @@ public sealed class SM9EncryptionMasterKey : IDisposable
 
 	// GenerateKey with the randomness of fill.
 	// If fill throws, nothing is left behind.
-	[SkipLocalsInit]
 	internal static SM9EncryptionMasterKey GenerateKey(Action<Span<byte>> fill, byte hid)
 	{
 		Unsafe.SkipInit(out FieldElement<SM9Order> privateKey);
@@ -335,7 +334,6 @@ public sealed class SM9EncryptionMasterKey : IDisposable
 
 	// Encapsulate with the randomness of fill.
 	// If fill throws, both buffers remain unchanged.
-	[SkipLocalsInit]
 	internal void Encapsulate(Span<byte> encapsulation, Span<byte> key, ReadOnlySpan<byte> id, Action<Span<byte>> fill)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
@@ -384,7 +382,6 @@ public sealed class SM9EncryptionMasterKey : IDisposable
 		return Encrypt(plaintext, destination, id, fill, true);
 	}
 
-	[SkipLocalsInit]
 	private int Encrypt(ReadOnlySpan<byte> plaintext, Span<byte> destination, ReadOnlySpan<byte> id, Action<Span<byte>> fill, bool der)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
@@ -421,7 +418,6 @@ public sealed class SM9EncryptionMasterKey : IDisposable
 	}
 
 	// t2 = ke·t1⁻¹ and de = [t2]P2.
-	[SkipLocalsInit]
 	private SM9G2PrivateKey Extract(ReadOnlySpan<byte> id, byte hid)
 	{
 		Unsafe.SkipInit(out FieldElement<SM9Order> scalar);
@@ -447,7 +443,6 @@ public sealed class SM9EncryptionMasterKey : IDisposable
 
 	// The master key of ke, with Ppub-e = [ke]P1.
 	// Neither the time nor the addresses depend on ke.
-	[SkipLocalsInit]
 	private static SM9EncryptionMasterKey FromPrivateKey(in FieldElement<SM9Order> privateKey, byte hid)
 	{
 		SM9G1.MultiplyBase(in privateKey, out SM9AffinePoint<SM9Fp> publicKey);

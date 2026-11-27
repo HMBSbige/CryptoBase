@@ -114,7 +114,6 @@ internal sealed unsafe class Argon2Instance<TKernel> : Argon2LaneScheduler where
 		}
 	}
 
-	[SkipLocalsInit]
 	private void InitializeLane(int lane)
 	{
 		using CryptoBuffer<byte> seedBuffer = new(stackalloc byte[PrehashLength + 2 * sizeof(uint)]);
@@ -133,7 +132,6 @@ internal sealed unsafe class Argon2Instance<TKernel> : Argon2LaneScheduler where
 	}
 
 	// TPass makes the pass a constant in the first pass, the only one Argon2id fills here, so that supporting the later passes of Argon2i costs Argon2id no registers.
-	[SkipLocalsInit]
 	private void FillDataIndependentSegment<TPass>(int pass, int slice, int lane) where TPass : struct, IArgon2Pass
 	{
 		Debug.Assert(TPass.IsFirst == pass is 0);
@@ -214,7 +212,6 @@ internal sealed unsafe class Argon2Instance<TKernel> : Argon2LaneScheduler where
 		}
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private void FillDataDependentSegment(int pass, int slice, int lane)
 	{
@@ -252,7 +249,6 @@ internal sealed unsafe class Argon2Instance<TKernel> : Argon2LaneScheduler where
 
 	// The first Argon2d segment of a lane references only that lane and starts after the two blocks InitializeLane computes.
 	// Starting FillDataDependentSegment past index 0 would make the JIT keep fewer of its values in registers.
-	[SkipLocalsInit]
 	private void FillFirstDataDependentSegment(int lane)
 	{
 		int segmentLength = _segmentLength;
@@ -294,7 +290,6 @@ internal sealed unsafe class Argon2Instance<TKernel> : Argon2LaneScheduler where
 		}
 	}
 
-	[SkipLocalsInit]
 	private static void NextAddresses(ref Argon2Block zero, ref Argon2Block input, ref Argon2Block addresses, ref Argon2Block scratch)
 	{
 		++input[6];

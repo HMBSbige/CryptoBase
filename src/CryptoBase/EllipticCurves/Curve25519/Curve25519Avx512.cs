@@ -16,7 +16,6 @@ internal readonly struct Curve25519Avx512 : ICurve25519Kernel
 
 	// Window 0 starts group 0 and window 1 group 1, and each later pair adds to both, from their constant-time lookups into lanes by Field25519x8Avx512.CreateCached;
 	// the last window, alone, pairs with the identity.
-	[SkipLocalsInit]
 	public static void MultiplyBase(ReadOnlySpan<byte> scalar, out EdwardsPoint result)
 	{
 		Debug.Assert(scalar.Length is ScalarDigits.LimbCount * sizeof(ulong));
@@ -77,7 +76,6 @@ internal readonly struct Curve25519Avx512 : ICurve25519Kernel
 	// Group 0 takes the parts in the low half of the table and group 1 those in the high half, both doubled together;
 	// at each digit position the nonzero digits of the two halves pair up, the rest with the identity.
 	// The windows of [b]B pair up in the order they come.
-	[SkipLocalsInit]
 	public static void DoubleScalarMultiplyVariableTime(ReadOnlySpan<byte> a, ReadOnlySpan<EdwardsNielsPoint> pointTable, ReadOnlySpan<byte> b, out EdwardsPoint result)
 	{
 		const int parts = EdwardsVariableTimePointTable.PartCount;
@@ -223,7 +221,6 @@ internal readonly struct Curve25519Avx512 : ICurve25519Kernel
 	}
 
 	// The sum of the points of the two groups, with every intermediate cleared, as the points may depend on a secret scalar.
-	[SkipLocalsInit]
 	private static void Join(in Field25519x8Avx512 value, out EdwardsPoint result)
 	{
 		Unsafe.SkipInit(out EdwardsPoint other);

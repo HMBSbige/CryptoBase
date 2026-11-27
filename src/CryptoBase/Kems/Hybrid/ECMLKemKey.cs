@@ -168,7 +168,6 @@ internal struct ECMLKemKey<TCurve, TField, TOrder, TParameters>
 	}
 
 	// Both parts are computed before sharedSecret is written, since ciphertext may overlap it.
-	[SkipLocalsInit]
 	internal bool TryDecapsulate(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
 	{
 		if (!HasDecapsulationKey)

@@ -2,7 +2,6 @@ namespace CryptoBase.Hashes.Sha1;
 
 public partial struct Sha1Core
 {
-	[SkipLocalsInit]
 	private void ProcessBlocksSsse3(ReadOnlySpan<byte> source)
 	{
 		Debug.Assert(X86Base.X64.IsSupported && Ssse3.IsSupported);

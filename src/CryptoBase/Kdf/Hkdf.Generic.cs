@@ -64,7 +64,6 @@ public static class Hkdf<TMac> where TMac : class, IMacAlgorithm<TMac>
 	/// <param name="salt">The salt. It may be empty.</param>
 	/// <param name="info">The context and application-specific information. It may be empty.</param>
 	/// <exception cref="ArgumentOutOfRangeException"><paramref name="output" /> is empty or longer than 255 MACs.</exception>
-	[SkipLocalsInit]
 	public static void DeriveKey(ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info)
 	{
 		ValidateOutputLength(output);
@@ -82,7 +81,6 @@ public static class Hkdf<TMac> where TMac : class, IMacAlgorithm<TMac>
 		ArgumentOutOfRangeException.ThrowIfGreaterThan(output.Length, maxOkmLength, nameof(output));
 	}
 
-	[SkipLocalsInit]
 	private static int ExtractOverlapping(ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk)
 	{
 		int macLength = TMac.MacLength;
@@ -107,7 +105,6 @@ public static class Hkdf<TMac> where TMac : class, IMacAlgorithm<TMac>
 	// T(1) = MAC(PRK, info || 1).
 	// Info is copied before the output is written, so it may overlap the output.
 	// The MAC goes through a scratch buffer when the output is short or overlaps the key, so the call never gets overlapping buffers.
-	[SkipLocalsInit]
 	private static void ExpandBlock(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
 	{
 		int macLength = TMac.MacLength;
@@ -132,7 +129,6 @@ public static class Hkdf<TMac> where TMac : class, IMacAlgorithm<TMac>
 	// T(i) = MAC(PRK, T(i - 1) || info || i), with T(0) empty.
 	// The buffer holds T(i - 1) || info || i and the first block skips T(0), so no append reads the output and info may overlap it.
 	// Create consumes the key before the first block is written, so the key may overlap the output too.
-	[SkipLocalsInit]
 	private static void ExpandBlocks(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
 	{
 		int macLength = TMac.MacLength;

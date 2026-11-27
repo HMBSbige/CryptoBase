@@ -12,7 +12,6 @@ internal static class RsaOaep
 		return modulusLength - 2 * THash.HashLength - 2;
 	}
 
-	[SkipLocalsInit]
 	internal static void Encode<THash, TMgfHash>(ReadOnlySpan<byte> message, ReadOnlySpan<byte> label, ReadOnlySpan<byte> seed, Span<byte> encoded) where THash : unmanaged, IHashCore<THash> where TMgfHash : unmanaged, IHashCore<TMgfHash>
 	{
 		int hashLength = THash.HashLength;
@@ -38,7 +37,6 @@ internal static class RsaOaep
 	// Whether encoded is an encoding with the label; if so, M is encoded[start..], and otherwise start is meaningless.
 	// encoded is unmasked in place into Y ‖ seed ‖ DB.
 	// Every check runs and none branches on or indexes by the encoded message, as Manger's attack learns from telling the failures apart (Sec. 7.1.2, note).
-	[SkipLocalsInit]
 	internal static bool Decode<THash, TMgfHash>(Span<byte> encoded, ReadOnlySpan<byte> label, out int start) where THash : unmanaged, IHashCore<THash> where TMgfHash : unmanaged, IHashCore<TMgfHash>
 	{
 		int hashLength = THash.HashLength;

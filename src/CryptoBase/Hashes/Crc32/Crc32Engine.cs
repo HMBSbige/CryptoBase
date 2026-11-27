@@ -24,7 +24,6 @@ internal static class Crc32Engine
 		get => Vector512.IsHardwareAccelerated && Avx512BW.IsSupported && Pclmulqdq.V512.IsSupported;
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static uint Update<TAlgorithm>(uint state, ReadOnlySpan<byte> source) where TAlgorithm : unmanaged
 	{

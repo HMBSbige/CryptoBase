@@ -32,7 +32,6 @@ internal struct X25519Key : IDiffieHellmanKey<X25519Key>
 	}
 
 	// If drawing the key throws, the key stays as it was.
-	[SkipLocalsInit]
 	internal void GenerateKey()
 	{
 		using CryptoBuffer<byte> privateKey = new(stackalloc byte[PrivateKeyLength]);
@@ -120,7 +119,6 @@ internal struct X25519Key : IDiffieHellmanKey<X25519Key>
 
 	// X25519(k, 9) by the fixed-base multiplication on the Edwards curve and the birational map, as B maps to u = 9.
 	// The product is never the identity, which would map to 0, as a clamped k is not a multiple of L.
-	[SkipLocalsInit]
 	internal static void DerivePublicKey(ReadOnlySpan<byte> privateKey, Span<byte> publicKey)
 	{
 		Debug.Assert(publicKey.Length is PublicKeyLength);
@@ -135,7 +133,6 @@ internal struct X25519Key : IDiffieHellmanKey<X25519Key>
 	// X25519(k, u) into sharedSecret, unless the result is all zeros: then false, with sharedSecret unchanged.
 	// A clamped k is a multiple of 8 but not of the order of a larger subgroup of the curve or its twist, so the result is zero just for a point whose order divides 8 and the return value depends on peerPublicKey alone.
 	// The peer key is read in full before sharedSecret is written, so the two may overlap.
-	[SkipLocalsInit]
 	internal static bool TryDeriveSharedSecret(ReadOnlySpan<byte> privateKey, ReadOnlySpan<byte> peerPublicKey, Span<byte> sharedSecret)
 	{
 		Debug.Assert(privateKey.Length is PrivateKeyLength && sharedSecret.Length >= SharedSecretLength);
@@ -167,7 +164,6 @@ internal struct X25519Key : IDiffieHellmanKey<X25519Key>
 
 	// X25519(k, 9) into publicKey and X25519(k, u) into sharedSecret, for a peer key that is not of small order, as an encapsulation key is not, with one inversion for both: 1/((Z − Y)·z) gives 1/(Z − Y) for the map of the fixed-base product and 1/z for the ladder.
 	// Neither factor is 0, as a clamped k is not a multiple of L or of the order of the peer point, so neither result fails.
-	[SkipLocalsInit]
 	internal static void DerivePublicKeyAndSharedSecret(ReadOnlySpan<byte> privateKey, ReadOnlySpan<byte> peerPublicKey, Span<byte> publicKey, Span<byte> sharedSecret)
 	{
 		Debug.Assert(peerPublicKey.Length is PublicKeyLength && publicKey.Length is PublicKeyLength && sharedSecret.Length is SharedSecretLength);
@@ -279,7 +275,6 @@ internal struct X25519Key : IDiffieHellmanKey<X25519Key>
 		Debug.Assert(derived);
 	}
 
-	[SkipLocalsInit]
 	static void IDiffieHellmanKey<X25519Key>.GenerateEphemeral(in X25519Key publicKey, Span<byte> ephemeralPublicKey, Span<byte> sharedSecret)
 	{
 		Debug.Assert(publicKey.HasPublicKey);

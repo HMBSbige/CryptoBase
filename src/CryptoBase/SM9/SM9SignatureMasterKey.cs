@@ -176,7 +176,6 @@ public sealed class SM9SignatureMasterKey : IDisposable
 	/// </exception>
 	/// <exception cref="InvalidOperationException">The instance does not hold the master private key.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	[SkipLocalsInit]
 	public SM9SignatureKey ExtractKey(ReadOnlySpan<byte> id)
 	{
 		ThrowIfNoPrivateKey();
@@ -249,7 +248,6 @@ public sealed class SM9SignatureMasterKey : IDisposable
 
 	// GenerateKey with the randomness of fill.
 	// If fill throws, nothing is left behind.
-	[SkipLocalsInit]
 	internal static SM9SignatureMasterKey GenerateKey(Action<Span<byte>> fill, byte hid)
 	{
 		Unsafe.SkipInit(out FieldElement<SM9Order> privateKey);
@@ -273,7 +271,6 @@ public sealed class SM9SignatureMasterKey : IDisposable
 	// [h1]S' is not the point at infinity, as h1 lies in [1, N − 1]; S' + [h']P1 may be, and its pairing is then 1.
 	// Both stay projective, as the factors of the lines take one inversion for both.
 	// For an ID that has no key, P is the point at infinity, e(S', P) = 1 and w' = g^h', so the signature verifies just if h' = H2(M' ‖ g^h', N), which nothing finds but by chance.
-	[SkipLocalsInit]
 	private bool Verify(ReadOnlySpan<byte> message, ReadOnlySpan<byte> h, ReadOnlySpan<byte> s, ReadOnlySpan<byte> id)
 	{
 		// B1: h' in [1, N − 1]; B2: S' on the curve, which has cofactor 1, so in G1.

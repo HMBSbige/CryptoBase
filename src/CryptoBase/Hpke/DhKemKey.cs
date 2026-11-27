@@ -32,7 +32,6 @@ internal struct DhKemKey<TKem, TDhKey, TKdf>
 	internal bool HasDecapsulationKey => _key.HasPrivateKey;
 
 	// A seed from which no key pair derives is drawn again.
-	[SkipLocalsInit]
 	internal void GenerateKey()
 	{
 		using CryptoBuffer<byte> seed = new(stackalloc byte[PrivateSeedLength]);
@@ -112,7 +111,6 @@ internal struct DhKemKey<TKem, TDhKey, TKdf>
 	}
 
 	// Encap: a random ephemeral key, or, if derive is set, DeriveKeyPair(ephemeralInputKeyMaterial).
-	[SkipLocalsInit]
 	internal void Encapsulate(bool derive, ReadOnlySpan<byte> ephemeralInputKeyMaterial, Span<byte> ciphertext, Span<byte> sharedSecret)
 	{
 		ThrowIfCannotEncapsulate(ciphertext, sharedSecret);
@@ -128,7 +126,6 @@ internal struct DhKemKey<TKem, TDhKey, TKdf>
 	}
 
 	// AuthEncap: dh = DH(skE, pkR) ‖ DH(skS, pkR) and kem_context = enc ‖ pkRm ‖ pkSm.
-	[SkipLocalsInit]
 	internal void AuthEncapsulate(bool derive, ReadOnlySpan<byte> ephemeralInputKeyMaterial, ref DhKemKey<TKem, TDhKey, TKdf> sender, Span<byte> ciphertext, Span<byte> sharedSecret)
 	{
 		if (!sender._key.HasPrivateKey)
@@ -162,7 +159,6 @@ internal struct DhKemKey<TKem, TDhKey, TKdf>
 
 	// Decap.
 	// Everything that ciphertext overlaps is read before sharedSecret is written.
-	[SkipLocalsInit]
 	internal bool TryDecapsulate(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret)
 	{
 		ThrowIfCannotDecapsulate(sharedSecret);
@@ -189,7 +185,6 @@ internal struct DhKemKey<TKem, TDhKey, TKdf>
 	}
 
 	// AuthDecap: dh = DH(skR, pkE) ‖ DH(skR, pkS) and kem_context = enc ‖ pkRm ‖ pkSm.
-	[SkipLocalsInit]
 	internal bool TryAuthDecapsulate(ReadOnlySpan<byte> ciphertext, ref DhKemKey<TKem, TDhKey, TKdf> sender, Span<byte> sharedSecret)
 	{
 		ThrowIfCannotDecapsulate(sharedSecret);
@@ -233,7 +228,6 @@ internal struct DhKemKey<TKem, TDhKey, TKdf>
 	}
 
 	// DeriveKeyPair of RFC 9180, Section 7.1.3, with the KDF of the KEM: false, with the key cleared, if no candidate imports.
-	[SkipLocalsInit]
 	private bool TryDeriveKeyPair(ReadOnlySpan<byte> inputKeyMaterial)
 	{
 		Span<byte> suiteId = stackalloc byte[SuiteIdLength];
@@ -296,7 +290,6 @@ internal struct DhKemKey<TKem, TDhKey, TKdf>
 	}
 
 	// ExtractAndExpand of RFC 9180, Section 4.1.
-	[SkipLocalsInit]
 	private static void ExtractAndExpand(ReadOnlySpan<byte> dh, ReadOnlySpan<byte> kemContext, Span<byte> sharedSecret)
 	{
 		Span<byte> suiteId = stackalloc byte[SuiteIdLength];

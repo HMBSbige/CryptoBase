@@ -372,7 +372,6 @@ internal readonly partial struct MLDsaAvx2 : IMLDsaKernel
 
 	// Eight candidates from 24 bytes, each 128-bit lane taking its 12 from the 16 bytes that end where they do; vpermd moves the accepted ones to the front of a buffer that takes whole vectors.
 	// The bytes are public, so the permutation may depend on them.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static int RejectSample(ReadOnlySpan<byte> source, Span<int> destination)
 	{

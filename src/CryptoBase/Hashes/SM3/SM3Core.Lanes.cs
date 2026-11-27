@@ -3,7 +3,6 @@ namespace CryptoBase.Hashes.SM3;
 public partial struct SM3Core
 {
 	// What the blocks SM3(m ‖ ct) share for the message m that this state has absorbed and 32-bit big-endian counters ct.
-	[SkipLocalsInit]
 	internal readonly void GetCounterBlocks(out SM3CounterBlocks blocks)
 	{
 		Unsafe.SkipInit(out blocks);

@@ -7,7 +7,6 @@ internal static partial class KeccakP1600
 	// Zen 4 and 256-bit-datapath Zen 5 halve the row kernel's shuffle throughput; Lane128 has no shuffles.
 	internal static readonly bool PreferAvx512 = IsAvx512Supported && !CpuIdUtils.IsAmdWith256BitDatapath();
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void PermuteAvx512(ref InlineArray25<ulong> state)
 	{
@@ -19,7 +18,6 @@ internal static partial class KeccakP1600
 	}
 
 	// Runs the whole blocks that fit in length bytes through the state as TBlocks says, and returns the number of bytes they span; a squeeze leaves the state holding the last block written.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static unsafe int PermuteBlocksAvx512<TBlocks>(ref InlineArray25<ulong> state, ref byte data, int length) where TBlocks : IKeccakP1600Blocks
 	{
@@ -66,7 +64,6 @@ internal static partial class KeccakP1600
 	// Hashes an input to an output of at most the rate with the state in registers throughout,
 	// so the narrow stores of the padded last block never stall the wide loads of a permutation.
 	// All input is loaded before any output is stored, so the two may overlap.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static unsafe void HashAvx512<TRate>(ReadOnlySpan<byte> source, Span<byte> destination, byte domainSeparator) where TRate : IKeccakRate
 	{

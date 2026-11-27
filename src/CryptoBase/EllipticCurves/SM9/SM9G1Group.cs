@@ -29,7 +29,6 @@ internal static class SM9G1Group
 
 	// k·P for a point P of G1, by GLV: k = k1 + k2·λ with |k1|, |k2| < 2^127, and k1·P + k2·φ(P) by windows of width 5 over both, from tables of 0·P to 16·P and their images under φ, with the point at infinity as entry 0, which the complete formulas add.
 	// Neither the time nor the addresses depend on k or P.
-	[SkipLocalsInit]
 	internal static void Multiply(in SM9AffinePoint<SM9Fp> point, in FieldElement<SM9Order> scalar, out SM9Point<SM9Fp> result)
 	{
 		Span<sbyte> digits1 = stackalloc sbyte[PointDigitCount];
@@ -73,7 +72,6 @@ internal static class SM9G1Group
 	}
 
 	// The digits of the two parts of GLV for windows of width 5, and the sign masks of the parts.
-	[SkipLocalsInit]
 	internal static void Digits(in FieldElement<SM9Order> scalar, Span<sbyte> digits1, Span<sbyte> digits2, out ulong sign1, out ulong sign2)
 	{
 		SM9Decomposition.DecomposeG1(in scalar, out UInt128 k1, out UInt128 k2);
@@ -86,7 +84,6 @@ internal static class SM9G1Group
 	}
 
 	// k·P1 + addend for a public k and addend.
-	[SkipLocalsInit]
 	internal static void MultiplyBaseAddVariableTime(in FieldElement<SM9Order> scalar, in SM9Point<SM9Fp> addend, out SM9Point<SM9Fp> result)
 	{
 		BaseTable.MultiplyAddVariableTime(in scalar, in addend, out result);
@@ -101,7 +98,6 @@ internal static class SM9G1Group
 
 	// k·P for a public P of G1 and a public k, by GLV: k = k1 + k2·λ, and k1·P + k2·φ(P) by the NAF of width 5 of |k1| and |k2|, which share the doublings, from the odd multiples of ±P and their images under φ.
 	// The time depends on k.
-	[SkipLocalsInit]
 	internal static void MultiplyVariableTime(in SM9AffinePoint<SM9Fp> point, in FieldElement<SM9Order> scalar, out SM9Point<SM9Fp> result)
 	{
 		Span<sbyte> digits1 = stackalloc sbyte[VariableTimeBits + 1];
@@ -129,7 +125,6 @@ internal static class SM9G1Group
 	}
 
 	// The NAF of |k1| and |k2| for k = k1 + k2·λ and whether each part is negative, and the index of the top nonzero digit of either.
-	[SkipLocalsInit]
 	internal static int VariableTimeDigits(in FieldElement<SM9Order> scalar, Span<sbyte> digits1, Span<sbyte> digits2, out bool negative1, out bool negative2)
 	{
 		SM9Decomposition.DecomposeG1(in scalar, out UInt128 k1, out UInt128 k2);
@@ -181,7 +176,6 @@ internal static class SM9G1Group
 	}
 
 	// Adds digit·P from the odd multiples for an odd digit, negated for a negative one, or nothing for 0.
-	[SkipLocalsInit]
 	private static void AddVariableTime(ref SM9Point<SM9Fp> result, ReadOnlySpan<SM9Point<SM9Fp>> multiples, int digit)
 	{
 		if (digit > 0)
@@ -197,7 +191,6 @@ internal static class SM9G1Group
 	}
 
 	// Writes |part| in two limbs and returns its sign mask, for a part in two's complement.
-	[SkipLocalsInit]
 	private static ulong Magnitude(UInt128 part, Span<ulong> destination)
 	{
 		ulong low = (ulong)part;
@@ -209,7 +202,6 @@ internal static class SM9G1Group
 		return sign;
 	}
 
-	[SkipLocalsInit]
 	private static SM9AffinePoint<SM9Fp> FromPlain(ReadOnlySpan<ulong> x, ReadOnlySpan<ulong> y)
 	{
 		SM9AffinePoint<SM9Fp> point;

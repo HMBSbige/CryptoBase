@@ -55,7 +55,6 @@ public static class Tls12Prf
 		DeriveBlocks<TCore>(secret, label, seed1, seed2, output);
 	}
 
-	[SkipLocalsInit]
 	private static void DeriveOverlapping<TCore>(ReadOnlySpan<byte> secret, ReadOnlySpan<byte> label, ReadOnlySpan<byte> seed1, ReadOnlySpan<byte> seed2, Span<byte> output) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
 		int length = checked(label.Length + seed1.Length + seed2.Length);
@@ -67,7 +66,6 @@ public static class Tls12Prf
 		DeriveBlocks<TCore>(secret, labelAndSeed, ReadOnlySpan<byte>.Empty, ReadOnlySpan<byte>.Empty, output);
 	}
 
-	[SkipLocalsInit]
 	private static void DeriveBlocks<TCore>(ReadOnlySpan<byte> secret, ReadOnlySpan<byte> label, ReadOnlySpan<byte> seed1, ReadOnlySpan<byte> seed2, Span<byte> output) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
 		int hashLength = TCore.HashLength;

@@ -296,7 +296,6 @@ public sealed class AesCipher : IBlockCipher<AesCipher>
 		}
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private void TransformTail<TPolicy, TDirection>(ref TPolicy policy, ReadOnlySpan<byte> source, Span<byte> destination, int offset) where TPolicy : struct, IAesModePolicy, allows ref struct where TDirection : struct, IBlockDirection
 	{

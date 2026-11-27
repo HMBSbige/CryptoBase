@@ -70,7 +70,6 @@ public sealed class SM9SignatureKey : IDisposable
 	/// <param name="hid">The identifier hid of the generating function of the signing keys of the master key; 0x01 by default.</param>
 	/// <returns>An instance that holds the private key and the master public key.</returns>
 	/// <exception cref="ArgumentException"><paramref name="privateKey" /> or <paramref name="masterPublicKey" /> has the wrong length or is not a valid point, or the private key is not that of <paramref name="id" /> and <paramref name="hid" /> under <paramref name="masterPublicKey" />.</exception>
-	[SkipLocalsInit]
 	public static SM9SignatureKey ImportPrivateKey(ReadOnlySpan<byte> privateKey, ReadOnlySpan<byte> masterPublicKey, ReadOnlySpan<byte> id, byte hid = SM9Kgc.SignatureHid)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(privateKey.Length, PrivateKeyLength, nameof(privateKey));
@@ -188,7 +187,6 @@ public sealed class SM9SignatureKey : IDisposable
 	}
 
 	// As below, with fresh system randomness as the additional data.
-	[SkipLocalsInit]
 	private int Sign(ReadOnlySpan<byte> message, Span<byte> destination, bool der)
 	{
 		using CryptoBuffer<byte> additionalData = new(stackalloc byte[AdditionalDataLength]);
@@ -198,7 +196,6 @@ public sealed class SM9SignatureKey : IDisposable
 
 	// GB/T 38635.2-2020, Sec. 6.1, with r from the nonces of SM3Nonce over the x-coordinate of dsA, which with one more bit fixes dsA, SM3(0x02 ‖ M ‖ 00000001) mod N and additionalData, which empty makes deterministic.
 	// A1 to A4 hash 0x02 ‖ M once, for every r.
-	[SkipLocalsInit]
 	internal int Sign(ReadOnlySpan<byte> message, ReadOnlySpan<byte> additionalData, Span<byte> destination, bool der)
 	{
 		Debug.Assert(destination.Length >= (der ? DerSignatureLength : SignatureLength));
@@ -253,7 +250,6 @@ public sealed class SM9SignatureKey : IDisposable
 	// A3 to A6 for r in [1, N − 1] and the state of H2 after 0x02 ‖ M: w = g^r, h = H2(M ‖ w, N), l = (r − h) mod N and S = [l]dsA.
 	// Returns false, so that the caller draws the next r, if l = 0.
 	// Nothing branches on or indexes by r, w or l before the result.
-	[SkipLocalsInit]
 	internal bool TrySign(in SM3KdfState prefix, in FieldElement<SM9Order> r, SM9GTBase g, out FieldElement<SM9Order> h, out SM9AffinePoint<SM9Fp> s)
 	{
 		using CryptoBuffer<byte> encoded = new(stackalloc byte[SM9GT.EncodedLength]);

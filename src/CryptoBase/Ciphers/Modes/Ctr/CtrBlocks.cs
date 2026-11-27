@@ -71,7 +71,6 @@ internal static class CtrBlocks<TBlockCipher, TIncrementer>
 		}
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static int XorBatch(TBlockCipher blockCipher, ref Vector128<byte> counter, ReadOnlySpan<byte> source, Span<byte> destination)
 	{

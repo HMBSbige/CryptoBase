@@ -48,7 +48,6 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 	/// <inheritdoc />
 	public static int HmacBlockSize => BlockSizeInBytes;
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	static SM3Core IHashCore<SM3Core>.Create()
 	{
@@ -150,7 +149,6 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 		return x ^ BitOperations.RotateLeft(x, 15) ^ BitOperations.RotateLeft(x, 23);
 	}
 
-	[SkipLocalsInit]
 	private static void Finalize(ref SM3Core hashAlgorithm, Span<byte> destination)
 	{
 		Debug.Assert(destination.Length >= HashLength);
@@ -203,7 +201,6 @@ public partial struct SM3Core : IHmacHashCore<SM3Core>
 
 	// The schedule holds W[0..67] in order, so each access is a constant offset from words.
 	// rotate15 is 15, passed in for P0Software.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void ProcessBlocksSoftware(ref SM3Core hashAlgorithm, ref byte block, int remaining, int rotate15)
 	{

@@ -96,7 +96,6 @@ internal readonly struct Blake3Vector512Rows : IBlake3Kernel
 		}
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void Hash(ref byte input, nuint count, nuint tailLength, ref readonly uint key, ulong counter, uint flags, ref byte output)
 	{
@@ -147,7 +146,6 @@ internal readonly struct Blake3Vector512Rows : IBlake3Kernel
 		StoreChainingValues(h0, h1, count, ref output);
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void Hash8(ref byte input, nuint count, nuint tailLength, ref readonly uint key, ulong counter, uint flags, ref byte output)
 	{

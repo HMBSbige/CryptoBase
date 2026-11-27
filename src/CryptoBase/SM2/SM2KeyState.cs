@@ -81,7 +81,6 @@ internal struct SM2KeyState
 
 	// Candidates in [1, n − 1] until one is not n − 1, so that d is uniform in [1, n − 2]; only that retry branches.
 	// If fill throws, the key stays as it was.
-	[SkipLocalsInit]
 	internal void GenerateKey(Action<Span<byte>> fill)
 	{
 		Unsafe.SkipInit(out FieldElement<SM2Order> privateKey);
@@ -173,7 +172,6 @@ internal struct SM2KeyState
 
 	// Z = SM3(ENTL ‖ ID ‖ a ‖ b ‖ xG ‖ yG ‖ xA ‖ yA) of GB/T 32918.2-2016, Sec. 5.5, for the public key P = (xA, yA) of the state, with ENTL the bit length of ID in two big-endian bytes.
 	// Z of DefaultId is computed once and kept.
-	[SkipLocalsInit]
 	internal void ComputeZ(ReadOnlySpan<byte> id, Span<byte> destination)
 	{
 		Debug.Assert(id.Length <= MaxIdLength && destination.Length >= HashLength);
@@ -197,7 +195,6 @@ internal struct SM2KeyState
 	}
 
 	// As above for the uncompressed encoding of P.
-	[SkipLocalsInit]
 	private static void ComputeZ(ReadOnlySpan<byte> id, ReadOnlySpan<byte> publicKey, Span<byte> destination)
 	{
 		Debug.Assert(id.Length <= MaxIdLength && publicKey.Length == PublicKeyLength);
@@ -213,7 +210,6 @@ internal struct SM2KeyState
 	}
 
 	// As below, with fresh system randomness as the additional data.
-	[SkipLocalsInit]
 	internal int Sign(ReadOnlySpan<byte> message, ReadOnlySpan<byte> id, Span<byte> destination)
 	{
 		using CryptoBuffer<byte> additionalData = new(stackalloc byte[AdditionalDataLength]);
@@ -222,7 +218,6 @@ internal struct SM2KeyState
 	}
 
 	// GB/T 32918.2-2016, Sec. 6.1: e = SM3(Z ‖ M) and the nonces of SM3Nonce over d, e mod n and additionalData, which empty makes deterministic.
-	[SkipLocalsInit]
 	internal int Sign(ReadOnlySpan<byte> message, ReadOnlySpan<byte> id, ReadOnlySpan<byte> additionalData, Span<byte> destination)
 	{
 		Debug.Assert(HasPrivateKey && destination.Length >= MaxSignatureLength);
@@ -264,7 +259,6 @@ internal struct SM2KeyState
 
 	// GB/T 32918.2-2016, Sec. 7.1, for a signature in DER.
 	// Every input is public, so the products may take variable time.
-	[SkipLocalsInit]
 	internal bool Verify(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature, ReadOnlySpan<byte> id)
 	{
 		// r and s lie in [1, n − 1], as GB/T 32918.2-2016, Sec. 7.1, B1 and B2, require.
@@ -304,7 +298,6 @@ internal struct SM2KeyState
 	}
 
 	// One attempt as below, with (1 + d)⁻¹ from GetInverse.
-	[SkipLocalsInit]
 	internal bool TrySign(in FieldElement<SM2Order> e, in FieldElement<SM2Order> k, out FieldElement<SM2Order> r, out FieldElement<SM2Order> s)
 	{
 		Debug.Assert(HasPrivateKey);
@@ -337,7 +330,6 @@ internal struct SM2KeyState
 	// destination is CiphertextOverhead bytes longer than plaintext, or if der is set at least SM2CipherDer.GetMaxLength long; plaintext is not empty and does not overlap it.
 	// If fill throws, destination remains unchanged.
 	// Returns the length.
-	[SkipLocalsInit]
 	internal int Encrypt(ReadOnlySpan<byte> plaintext, Span<byte> destination, Action<Span<byte>> fill, bool der)
 	{
 		Debug.Assert(!plaintext.IsEmpty && (der ? destination.Length >= SM2CipherDer.GetMaxLength(plaintext.Length) : destination.Length == CiphertextOverhead + plaintext.Length) && !plaintext.Overlaps(destination));
@@ -381,7 +373,6 @@ internal struct SM2KeyState
 	}
 
 	// As Decrypt, for C1 encoded, C3 and a C2 that is not empty.
-	[SkipLocalsInit]
 	internal readonly bool Decrypt(ReadOnlySpan<byte> c1, ReadOnlySpan<byte> c3, ReadOnlySpan<byte> c2, Span<byte> destination)
 	{
 		Debug.Assert(HasPrivateKey && !c2.IsEmpty && destination.Length >= c2.Length);
@@ -498,7 +489,6 @@ internal struct SM2KeyState
 	}
 
 	// (1 + d)·R is dR + R, and the inversion, in constant time, takes aR to a⁻¹R.
-	[SkipLocalsInit]
 	private static void ComputeInverse(in FieldElement<SM2Order> privateKey, out FieldElement<SM2Order> result)
 	{
 		Unsafe.SkipInit(out FieldElement<SM2Order> one);
@@ -510,7 +500,6 @@ internal struct SM2KeyState
 	}
 
 	// e = SM3(Z ‖ M) for the public key of the state.
-	[SkipLocalsInit]
 	private void ComputeE(ReadOnlySpan<byte> message, ReadOnlySpan<byte> id, Span<byte> destination)
 	{
 		Span<byte> z = stackalloc byte[HashLength];
@@ -525,7 +514,6 @@ internal struct SM2KeyState
 	// k·P comes from table, the table of P, unless it is null.
 	// With cofactor 1 and P on the curve, S = P is not the point at infinity.
 	// Whether t is all zero follows from block 1 unless that is all zero too, which for 32 bytes or more has odds 2^−256, and only that and the retry branch on it.
-	[SkipLocalsInit]
 	private readonly void DrawEphemeral(ECPointTable<SM2Curve, SM2CurveField, SM2Order>? table, int length, Action<Span<byte>> fill, Span<byte> c1, Span<byte> point, ref SM3KdfState kdf, Span<byte> first)
 	{
 		Unsafe.SkipInit(out FieldElement<SM2Order> k);
@@ -599,7 +587,6 @@ internal struct SM2KeyState
 	}
 
 	// A6 to A8: C3 = SM3(x2 ‖ M ‖ y2) and C2 = M ⊕ t, from block 1 of t in first and the next ones from kdf.
-	[SkipLocalsInit]
 	private static void Seal(ReadOnlySpan<byte> plaintext, in SM3KdfState kdf, ReadOnlySpan<byte> point, ReadOnlySpan<byte> first, Span<byte> c3, Span<byte> c2)
 	{
 		int length = plaintext.Length;

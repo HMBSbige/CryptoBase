@@ -178,7 +178,6 @@ public sealed class SM9KeyExchange : IDisposable
 
 	// A3 or B3: R = [r]Q = [r·h1]P1 + [r]Ppub-e by SM9Encryption.MultiplyUserKey, which r in [1, N − 1] keeps from the point at infinity unless Q is, for an ID that has no key, which throws with r erased, and g^r, of A5 or B4.
 	// Neither the time nor the addresses depend on r.
-	[SkipLocalsInit]
 	private void Start(SM9G1FixedBase masterPublicKey, in FieldElement<SM9Order> h1, SM9GTBase g, Action<Span<byte>> fill)
 	{
 		Span<byte> encoded = stackalloc byte[SM9G1.EncodedLength];
@@ -205,7 +204,6 @@ public sealed class SM9KeyExchange : IDisposable
 	}
 
 	// A5 to A8 for the initiator, B4 to B6 and B8 for the responder.
-	[SkipLocalsInit]
 	private bool Derive(ReadOnlySpan<byte> peerEphemeralPublicKey, Span<byte> sharedKey, Span<byte> confirmation, Span<byte> peerConfirmation)
 	{
 		SM9G2PrivateKey privateKey = _key.GetKey();

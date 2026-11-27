@@ -11,7 +11,6 @@ internal static class SM9FinalExponentiation
 
 	internal const ulong TMinus = 0x2000000000280880;
 
-	[SkipLocalsInit]
 	internal static void Run(in SM9Fp12 value, out SM9Fp12 result)
 	{
 		SM9Fp12.Invert(in value, out SM9Fp12 inverse);
@@ -71,7 +70,6 @@ internal static class SM9FinalExponentiation
 	}
 
 	// value^t for value in the cyclotomic subgroup, by the NAF of t, which is public.
-	[SkipLocalsInit]
 	private static void PowerT(in SM9Fp12 value, out SM9Fp12 result)
 	{
 		SM9Fp12.Conjugate(in value, out SM9Fp12 inverse);

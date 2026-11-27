@@ -99,7 +99,6 @@ internal static class SM2Vector<TField> where TField : unmanaged, ISM2Field29Lan
 	// One table takes the blocks of every lane; two take half of the lanes each, lane l + B reading the window of lane l in the second table for B = LaneCount/2.
 	// One table leaves secondResult unset.
 	// One copy of the code serves both counts, so that the first product with two tables does not compile one of its own.
-	[SkipLocalsInit]
 	private static void SumWindows<TSelector, TCurve>(ReadOnlySpan<ulong> first, ReadOnlySpan<ulong> second, in FieldElement<SM2Order> scalar, in FieldElement<SM2Order> secondScalar, out JacobianPoint<SM2Field52> firstResult, out JacobianPoint<SM2Field52> secondResult) where TSelector : struct, ISelector where TCurve : struct, IECCurve
 	{
 		Debug.Assert(first.Length == ECGeneratorTable<TCurve, SM2Field52, SM2Order>.Length && (second.IsEmpty || second.Length == first.Length));
@@ -265,7 +264,6 @@ internal static class SM2Vector<TField> where TField : unmanaged, ISM2Field29Lan
 	// The terms of λ and x1 − x3 have limbs below 3u + 65, and every other operand of a product comes from Multiply or LoadEntries, in limbs below u + 65.
 	// x3 and y3 subtract values of LoadEntries and Reduce, as Subtract takes, and have limbs below 5u + 65, which Halve and Reduce take to the a·2^260 of SM2Field52 below 2p, as Pack joins them.
 	// The products of λ, x3 and y3, which the chain of inverses does not wait for, take the carry of MultiplyRipple.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private static void FillRound<TCurve>(Span<ulong> windows, int half, Span<TField> products) where TCurve : struct, IECCurve
 	{
@@ -449,7 +447,6 @@ internal static class SM2Vector<TField> where TField : unmanaged, ISM2Field29Lan
 	}
 
 	// The inverse of each lane of a product, from one inversion of the product of the lanes, which goes through SM2Field52, halved, and back through LoadEntries, doubled.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private static void InvertLanes(in TField value, out TField result)
 	{
@@ -500,7 +497,6 @@ internal static class SM2Vector<TField> where TField : unmanaged, ISM2Field29Lan
 	}
 
 	// Writes the sums of group that are not spare to entry half + m of their window, as SM2Field52.Pack writes them, from the coordinates packed on the lanes.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	private static void Scatter<TCurve>(Span<ulong> windows, int half, int group, int count, in TField x, in TField y) where TCurve : struct, IECCurve
 	{
@@ -696,7 +692,6 @@ internal static class SM2Vector<TField> where TField : unmanaged, ISM2Field29Lan
 	// H before Reduce has limbs below 3u + 65 and 2R below 6u + 130.
 	// The products come in rounds, each needing only earlier rounds, by MultiplyRipple and SquareRipple, as no product of a round waits for another.
 	// The result must not be the left.
-	[SkipLocalsInit]
 	private static void MixedAdd(in SM2JacobianLanes<TField> left, in TField x, in TField y, ref TField scratch, out SM2JacobianLanes<TField> result)
 	{
 		ref TField zz = ref scratch;
@@ -726,7 +721,6 @@ internal static class SM2Vector<TField> where TField : unmanaged, ISM2Field29Lan
 	}
 
 	// (x1, y1) + (x2, y2), as MixedAdd gives it for Z1 = 1, without the products by Z1: H, R, I, J and V keep the bounds there, and Z3 = 2H, below 4p, goes through Reduce.
-	[SkipLocalsInit]
 	private static void AffineAdd(in TField x1, in TField y1, in TField x2, in TField y2, ref TField scratch, out SM2JacobianLanes<TField> result)
 	{
 		ref TField h = ref scratch;
@@ -753,7 +747,6 @@ internal static class SM2Vector<TField> where TField : unmanaged, ISM2Field29Lan
 	// H and R go through Reduce as in MixedAdd, and U1, U2, S1 and S2 stay below 1.1p, J and V below 1.3p, S1·J below 1.1p and 2·Z1·Z2·H below 2.2p.
 	// The products come in rounds as in MixedAdd.
 	// The result must be neither input, and may be scratch 0 to 2: Z1³ and Z2³ there are last read before X3 and Y3 overwrite them, and Z3 doubles Z1·Z2·H in place.
-	[SkipLocalsInit]
 	private static void Add(in SM2JacobianLanes<TField> left, in SM2JacobianLanes<TField> right, ref TField scratch, out SM2JacobianLanes<TField> result)
 	{
 		ref TField z1z1 = ref scratch;

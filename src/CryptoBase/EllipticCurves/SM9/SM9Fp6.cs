@@ -13,7 +13,6 @@ internal struct SM9Fp6
 
 	// The product, reduced once per coefficient from MultiplyWide.
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
 	internal static void Multiply(in SM9Fp6 left, in SM9Fp6 right, out SM9Fp6 result)
 	{
 		MultiplyWide(in left, in right, out SM9Fp6Wide product);
@@ -24,7 +23,6 @@ internal struct SM9Fp6
 	// For reduced inputs, c0 has coefficients in (−10B, B) and (−4B, 4B), c1 in (−8B, 2B) and (−2B, 5B) and c2 in (−6B, 3B) and [0, 6B).
 	// The products of the sums, of limbs below 2^53, leave every column below 2^60.6 in magnitude.
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
 	internal static void MultiplyWide(in SM9Fp6 left, in SM9Fp6 right, out SM9Fp6Wide result)
 	{
 		SM9Fp2.MultiplyWide(in left.C0, in right.C0, out SM9Fp2Wide v0);
@@ -52,7 +50,6 @@ internal struct SM9Fp6
 
 	// Chung and Hasan's SQR2: with s0 = a0², s1 = 2a0a1, s2 = (a0 − a1 + a2)², s3 = 2a1a2 and s4 = a2², c0 = s0 + u·s3, c1 = s1 + u·s4 and c2 = s1 + s2 + s3 − s0 − s4.
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
 	internal static void Square(in SM9Fp6 value, out SM9Fp6 result)
 	{
 		SM9Fp2.Square(in value.C0, out SM9Fp2 s0);
@@ -78,7 +75,6 @@ internal struct SM9Fp6
 	// value·(x0 + x1·v) before reduction, the shape of the first half of a line: a0x0 + u·a2x1, (a0 + a1)(x0 + x1) − a0x0 − a1x1 and a1x1 + a2x0, five products.
 	// For reduced inputs the first has coefficients in (−6B, B) and (−2B, 3B) and the others, sums of two products, in (−4B, 2B) and [0, 4B); every column is below 2^59.6 in magnitude.
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
 	internal static void MultiplyBy01Wide(in SM9Fp6 value, in SM9Fp2 x0, in SM9Fp2 x1, out SM9Fp6Wide result)
 	{
 		SM9Fp2.MultiplyWide(in value.C0, in x0, out SM9Fp2Wide t0);
@@ -97,7 +93,6 @@ internal struct SM9Fp6
 	// value·x·v before reduction = u·a2x + a0x·v + a1x·v², the shape of the second half of a line;
 	// for reduced inputs the first coefficient lies in (−4B, 0] and (−2B, B) and the others are single products.
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
 	internal static void MultiplyBy1Wide(in SM9Fp6 value, in SM9Fp2 x, out SM9Fp6Wide result)
 	{
 		SM9Fp2.MultiplyWide(in value.C0, in x, out result.C1);
@@ -120,7 +115,6 @@ internal struct SM9Fp6
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
 	internal static void Add(in SM9Fp6 left, in SM9Fp6 right, out SM9Fp6 result)
 	{
 		Unsafe.SkipInit(out result);
@@ -130,7 +124,6 @@ internal struct SM9Fp6
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
 	internal static void Subtract(in SM9Fp6 left, in SM9Fp6 right, out SM9Fp6 result)
 	{
 		Unsafe.SkipInit(out result);
@@ -140,7 +133,6 @@ internal struct SM9Fp6
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
 	internal static void Negate(in SM9Fp6 value, out SM9Fp6 result)
 	{
 		Unsafe.SkipInit(out result);
@@ -150,7 +142,6 @@ internal struct SM9Fp6
 	}
 
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
 	internal static void Double(in SM9Fp6 value, out SM9Fp6 result)
 	{
 		Unsafe.SkipInit(out result);
@@ -159,7 +150,6 @@ internal struct SM9Fp6
 		SM9Fp2.Double(in value.C2, out result.C2);
 	}
 
-	[SkipLocalsInit]
 	internal static void ConditionalSelect(ulong mask, in SM9Fp6 whenSet, in SM9Fp6 whenClear, out SM9Fp6 result)
 	{
 		Unsafe.SkipInit(out result);
@@ -170,7 +160,6 @@ internal struct SM9Fp6
 
 	// With t0 = a0² − u·a1a2, t1 = u·a2² − a0a1 and t2 = a1² − a0a2, value·(t0 + t1·v + t2·v²) is the norm a0t0 + u(a2t1 + a1t2) in Fp2.
 	// 0 gives 0; the inversion takes constant time.
-	[SkipLocalsInit]
 	internal static void Invert(in SM9Fp6 value, out SM9Fp6 result)
 	{
 		SM9Fp2.Square(in value.C0, out SM9Fp2 t0);

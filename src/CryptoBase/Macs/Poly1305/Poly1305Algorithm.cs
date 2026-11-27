@@ -178,7 +178,6 @@ public readonly struct Poly1305Algorithm : IOneShotMacAlgorithm
 		return (firstLength & -blockSize) + (long)(secondLength & -blockSize);
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static int MacCore<TState>(ReadOnlySpan<byte> key, ReadOnlySpan<byte> source, Span<byte> destination) where TState : unmanaged, IPoly1305State<TState>, allows ref struct
 	{

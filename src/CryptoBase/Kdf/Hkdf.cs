@@ -30,7 +30,6 @@ public static class Hkdf
 	/// <summary>
 	/// Derives key material using HKDF extract-and-expand.
 	/// </summary>
-	[SkipLocalsInit]
 	public static void DeriveKey<TCore>(ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
 		ValidateOutputLength<TCore>(output);
@@ -68,7 +67,6 @@ public static class Hkdf
 		ExpandOverlapping<TCore>(prk, output, info);
 	}
 
-	[SkipLocalsInit]
 	private static void ExpandOverlapping<TCore>(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
 		using CryptoBuffer<byte> infoBuffer = CryptoBuffer<byte>.ShouldUsePool(info.Length) ? new CryptoBuffer<byte>(info.Length) : new CryptoBuffer<byte>(stackalloc byte[info.Length]);
@@ -77,7 +75,6 @@ public static class Hkdf
 		ExpandBlocks<TCore>(prk, output, infoCopy);
 	}
 
-	[SkipLocalsInit]
 	private static void ExpandBlocks<TCore>(ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info) where TCore : unmanaged, IHmacHashCore<TCore>
 	{
 		int hashLength = TCore.HashLength;

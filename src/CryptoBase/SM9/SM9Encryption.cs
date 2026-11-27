@@ -24,7 +24,6 @@ internal static class SM9Encryption
 	// C is [r·h1]P1 + [r]Ppub-e, as SM9G1FixedBase.MultiplyBaseSum gives it; with r in [1, N − 1], it is the point at infinity just if Q is, for an ID that has no key, which throws.
 	// Whether those bytes are all zero follows from block 1 unless that is all zero too, which for 32 bytes or more has odds 2^−256, and only that, the retry and the throw branch on it.
 	// If fill throws, nothing secret is left behind.
-	[SkipLocalsInit]
 	internal static void DrawEphemeral(SM9G1FixedBase masterPublicKey, in FieldElement<SM9Order> h1, SM9GTBase g, ReadOnlySpan<byte> id, int zeroCheckLength, Action<Span<byte>> fill, Span<byte> c, ref SM3KdfState kdf, Span<byte> first)
 	{
 		Debug.Assert(zeroCheckLength > 0 && c.Length is SM9G1.EncodedLength && first.Length is SM3KdfState.BlockLength);
@@ -65,7 +64,6 @@ internal static class SM9Encryption
 
 	// [r]Q = [r·h1]P1 + [r]Ppub-e encoded in c for Q = [h1]P1 + Ppub-e, from h1 in Montgomery form; throws if [r]Q, so Q, is the point at infinity.
 	// product takes r·h1, which the caller erases.
-	[SkipLocalsInit]
 	internal static void MultiplyUserKey(SM9G1FixedBase masterPublicKey, in FieldElement<SM9Order> factor, in FieldElement<SM9Order> r, out FieldElement<SM9Order> product, Span<byte> c)
 	{
 		FieldElement<SM9Order>.Multiply(in factor, in r, out product);
@@ -81,7 +79,6 @@ internal static class SM9Encryption
 
 	// B1 and B2 of Sec. 6.2 and 7.2 and the KDF of B3: C, encoded, lies on the curve, which has cofactor 1, so in G1, and kdf absorbs C ‖ w' ‖ ID with w' = e(C, de).
 	// Returns false, absorbing nothing, if C does not decode.
-	[SkipLocalsInit]
 	internal static bool TryStart(ReadOnlySpan<byte> c, SM9G2PrivateKey key, ReadOnlySpan<byte> id, ref SM3KdfState kdf)
 	{
 		if (!SM9G1.TryDecode(c, out SM9AffinePoint<SM9Fp> point))
@@ -101,7 +98,6 @@ internal static class SM9Encryption
 	}
 
 	// B3 of Sec. 6.2: writes K' to key unless it is all zero, for kdf from TryStart; returns false, writing nothing, if it is.
-	[SkipLocalsInit]
 	internal static bool TryWriteKey(in SM3KdfState kdf, Span<byte> key)
 	{
 		using CryptoBuffer<byte> first = new(stackalloc byte[SM3KdfState.BlockLength]);
@@ -130,7 +126,6 @@ internal static class SM9Encryption
 
 	// A6 to A8 of Sec. 7.1: C2 = M ⊕ K1 and C3 = SM3(C2 ‖ K2), from block 1 of K in first and the next ones from kdf.
 	// c2 does not overlap plaintext.
-	[SkipLocalsInit]
 	internal static void Seal(ReadOnlySpan<byte> plaintext, in SM3KdfState kdf, ReadOnlySpan<byte> first, Span<byte> c3, Span<byte> c2)
 	{
 		int length = plaintext.Length;
@@ -149,7 +144,6 @@ internal static class SM9Encryption
 	// B1 to B5 of Sec. 7.2 for C1 encoded and a C2 that is not empty: writes M' to the first C2.Length bytes of destination and returns true if C1 lies on the curve, K1' is not all zero and C3 = SM3(C2 ‖ K2'), which it compares in fixed time;
 	// otherwise returns false and writes nothing.
 	// destination may overlap the ciphertext: M' goes there only after the last read of it.
-	[SkipLocalsInit]
 	internal static bool Open(ReadOnlySpan<byte> c1, ReadOnlySpan<byte> c3, ReadOnlySpan<byte> c2, SM9G2PrivateKey key, ReadOnlySpan<byte> id, Span<byte> destination)
 	{
 		Debug.Assert(c3.Length is HashLength && !c2.IsEmpty && destination.Length >= c2.Length);
@@ -192,7 +186,6 @@ internal static class SM9Encryption
 
 	// Writes the bytes of the key stream of kdf from offset on, which fill destination: K2 from mlen on.
 	// It spans at most two blocks, which only offset decides.
-	[SkipLocalsInit]
 	private static void ReadKeyStream(in SM3KdfState kdf, int offset, Span<byte> destination)
 	{
 		using CryptoBuffer<byte> block = new(stackalloc byte[SM3KdfState.BlockLength]);
@@ -209,7 +202,6 @@ internal static class SM9Encryption
 	}
 
 	// MAC(K2, Z) = SM3(Z ‖ K2) of Sec. 5.4.5.
-	[SkipLocalsInit]
 	private static void Mac(ReadOnlySpan<byte> message, ReadOnlySpan<byte> key, Span<byte> destination)
 	{
 		SM3Core hash = HashCore.Create<SM3Core>();

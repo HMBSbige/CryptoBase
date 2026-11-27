@@ -45,7 +45,6 @@ internal struct KeccakSponge<TRate> where TRate : IKeccakRate
 		AbsorbBlocks(source, position, bytesNeeded);
 	}
 
-	[SkipLocalsInit]
 	private void AbsorbBlocks(ReadOnlySpan<byte> source, int position, int bytesNeeded)
 	{
 		if (position is not 0)
@@ -123,7 +122,6 @@ internal struct KeccakSponge<TRate> where TRate : IKeccakRate
 
 	// Absorbs source, pads it and squeezes destination, starting from the zero state.
 	// All input is absorbed before any output is written, so the two may overlap.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void HashData(ReadOnlySpan<byte> source, Span<byte> destination, byte domainSeparator)
 	{
@@ -150,7 +148,6 @@ internal struct KeccakSponge<TRate> where TRate : IKeccakRate
 	}
 
 	// With one block in and one out, the state is zero apart from the input and its padding, so the input is copied in rather than XORed, and the output read straight after the one permutation.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static void HashBlock(ReadOnlySpan<byte> source, Span<byte> destination, byte domainSeparator)
 	{
@@ -236,7 +233,6 @@ internal struct KeccakSponge<TRate> where TRate : IKeccakRate
 	}
 
 	// Output continues across calls; the permutation runs only when more output is requested than the current block holds.
-	[SkipLocalsInit]
 	internal void Squeeze(Span<byte> destination)
 	{
 		Debug.Assert(IsSqueezing);

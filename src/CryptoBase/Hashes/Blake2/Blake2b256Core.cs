@@ -16,7 +16,6 @@ public struct Blake2b256Core : IHmacHashCore<Blake2b256Core>
 	/// <inheritdoc />
 	public static int HmacBlockSize => Blake2bState.BlockSizeInBytes;
 
-	[SkipLocalsInit]
 	static Blake2b256Core IHashCore<Blake2b256Core>.Create()
 	{
 		Unsafe.SkipInit(out Blake2b256Core hashAlgorithm);

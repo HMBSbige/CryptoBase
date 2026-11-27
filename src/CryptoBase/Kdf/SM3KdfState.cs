@@ -40,7 +40,6 @@ internal struct SM3KdfState
 	}
 
 	// Writes block counter, from 1, to the first BlockLength bytes of destination.
-	[SkipLocalsInit]
 	internal readonly void WriteBlock(uint counter, Span<byte> destination)
 	{
 		Debug.Assert(counter is not 0 && destination.Length >= BlockLength);
@@ -72,7 +71,6 @@ internal struct SM3KdfState
 	// destination = source ⊕ the key from block counter on, source.Length bytes of each, taking the key a chunk at a time on the stack.
 	// Returns a value that is 0 just if every byte of the key is, without branching on them.
 	// destination is source or does not overlap it.
-	[SkipLocalsInit]
 	internal readonly ulong Xor(uint counter, ReadOnlySpan<byte> source, Span<byte> destination)
 	{
 		Debug.Assert(destination.Length >= source.Length);
@@ -95,7 +93,6 @@ internal struct SM3KdfState
 	}
 
 	// Whether the length bytes of the key from block counter on are all zero, a chunk at a time on the stack; it returns at the first chunk that is not.
-	[SkipLocalsInit]
 	internal readonly bool IsZero(uint counter, int length)
 	{
 		using CryptoBuffer<byte> chunk = new(stackalloc byte[Math.Min(length, ChunkLength)]);
@@ -154,7 +151,6 @@ internal struct SM3KdfState
 
 	// Sixteen lanes take all but up to eight blocks, which eight lanes take.
 	// What the lanes leave goes one block at a time.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private readonly void WriteLanes(uint counter, Span<byte> destination)
 	{

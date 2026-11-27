@@ -57,7 +57,6 @@ internal struct Blake2bState
 		Unsafe.Add(ref state, 7) = IV7;
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static void HashData(ReadOnlySpan<byte> source, Span<byte> destination, int hashLength)
 	{

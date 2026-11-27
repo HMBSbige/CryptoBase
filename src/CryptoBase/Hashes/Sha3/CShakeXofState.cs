@@ -11,7 +11,6 @@ internal struct CShakeXofState<TRate> where TRate : IKeccakRate
 		_sponge.Initialize(functionName, customization);
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void HashData(ReadOnlySpan<byte> functionName, ReadOnlySpan<byte> customization, ReadOnlySpan<byte> source, Span<byte> destination)
 	{

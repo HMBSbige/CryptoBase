@@ -64,7 +64,6 @@ internal struct Ed448Key
 	private readonly ReadOnlySpan<byte> PublicKey => _publicKey;
 
 	// If drawing the seed throws, the key stays as it was.
-	[SkipLocalsInit]
 	internal void GenerateKey()
 	{
 		using CryptoBuffer<byte> seed = new(stackalloc byte[PrivateKeyLength]);
@@ -144,7 +143,6 @@ internal struct Ed448Key
 	}
 
 	// Version 1, without the public key, which RFC 8410 §7 leaves optional.
-	[SkipLocalsInit]
 	internal readonly int ExportPkcs8PrivateKey(Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, Pkcs8PrivateKeyLength, nameof(destination));
@@ -273,7 +271,6 @@ internal struct Ed448Key
 	// RFC 8032 §5.2.5: s is the first 57 bytes of SHAKE256(seed, 114), pruned, A = [s]B, and the prefix is the other 57.
 	// Pruning clears the last byte of s, so only its first 56 are used.
 	// One inversion gives the affine A for both its encoding and −A, so that the coordinates of the product, which depend on s, need not be kept.
-	[SkipLocalsInit]
 	private void SetPrivateKey(ReadOnlySpan<byte> seed)
 	{
 		DropPointTable();
@@ -319,7 +316,6 @@ internal struct Ed448Key
 
 	// RFC 8032 §5.2.6.
 	// r is secret until R hides it, and the signature is written after the last read of the message, which may overlap destination.
-	[SkipLocalsInit]
 	private readonly void SignCore(ReadOnlySpan<byte> header, ReadOnlySpan<byte> context, ReadOnlySpan<byte> message, Span<byte> destination)
 	{
 		using CryptoBuffer<byte> buffer = new(stackalloc byte[HashLength + Edwards448.ScalarLength]);
@@ -353,7 +349,6 @@ internal struct Ed448Key
 	// Every input is public, so the product takes variable time.
 	// The first verification goes without the table of −A, which a key that verifies once has no use for, and a later one builds it.
 	// Threads that verify at once may each build one, but only the first to finish publishes it, and the paths with and without it give the same R'.
-	[SkipLocalsInit]
 	private bool VerifyCore(ReadOnlySpan<byte> header, ReadOnlySpan<byte> context, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
 	{
 		if (signature.Length is not SignatureLength)

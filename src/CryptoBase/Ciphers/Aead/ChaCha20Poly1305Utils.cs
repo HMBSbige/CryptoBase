@@ -87,7 +87,6 @@ internal static class ChaCha20Poly1305Utils
 		return prefixLength + 2 * KeyStreamBlockSize - 1 & -KeyStreamBlockSize;
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void Encrypt<TState>(ChaCha20Cipher cipher, ref byte sourceStart, ref byte destinationStart, int length, ref byte tagStart, ref byte associatedDataStart, int associatedDataLength) where TState : unmanaged, IPoly1305State<TState>, allows ref struct
 	{
@@ -130,7 +129,6 @@ internal static class ChaCha20Poly1305Utils
 		}
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static bool Decrypt<TState>(ChaCha20Cipher cipher, ref byte sourceStart, ref byte destinationStart, int length, ref byte tagStart, ref byte associatedDataStart, int associatedDataLength) where TState : unmanaged, IPoly1305State<TState>, allows ref struct
 	{
@@ -216,7 +214,6 @@ internal static class ChaCha20Poly1305Utils
 		}
 	}
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	private static void XorFromKeyStream(ChaCha20Cipher cipher, ReadOnlySpan<byte> source, Span<byte> destination)
 	{

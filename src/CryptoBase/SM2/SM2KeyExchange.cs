@@ -182,7 +182,6 @@ public sealed class SM2KeyExchange : IDisposable
 
 	// R = r·G and t = (d + x̄·r) mod n (A2, A4 and A5, or B2 to B4), which takes the place of d and r from here on.
 	// Neither the time nor the addresses depend on d or r.
-	[SkipLocalsInit]
 	private void Start(in FieldElement<SM2Order> privateKey, Action<Span<byte>> fill)
 	{
 		Unsafe.SkipInit(out FieldElement<SM2Order> ephemeral);
@@ -209,7 +208,6 @@ public sealed class SM2KeyExchange : IDisposable
 	}
 
 	// A6 to A10 for the initiator, B5 to B8 and B10 for the responder.
-	[SkipLocalsInit]
 	private bool Derive(SM2Key peerKey, ReadOnlySpan<byte> peerId, ReadOnlySpan<byte> peerEphemeralPublicKey, Span<byte> sharedKey, Span<byte> confirmation, Span<byte> peerConfirmation)
 	{
 		// A copy of the peer's ephemeral key for TryMultiplyShared and the confirmation hash, as the inputs may overlap the outputs.
@@ -285,7 +283,6 @@ public sealed class SM2KeyExchange : IDisposable
 	// Without either, P + x̄·R comes from public inputs alone, in variable time, before t·(P + x̄·R) in fixed time.
 	// Not inlined, so that the frame of Derive keeps the size it has without the windows.
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
 	private bool TryMultiplyShared(ref SM2KeyState peer, ReadOnlySpan<byte> x, in AffinePoint<SM2CurveField> ephemeral, Span<byte> shared)
 	{
 		ECPointTable<SM2Curve, SM2CurveField, SM2Order>? table = peer.GetExchangeTable();
@@ -330,7 +327,6 @@ public sealed class SM2KeyExchange : IDisposable
 
 	// sum = P + x̄·R for the static public key P and the ephemeral public key R of the peer, both on the curve, and x the x-coordinate of R; false if that is the point at infinity.
 	// Every input is public, so the time may depend on them.
-	[SkipLocalsInit]
 	private static bool TryAddMultiple(in AffinePoint<SM2CurveField> point, ReadOnlySpan<byte> x, in AffinePoint<SM2CurveField> ephemeral, out AffinePoint<SM2CurveField> sum)
 	{
 		Truncate(x, out FieldElement<SM2Order> truncated);

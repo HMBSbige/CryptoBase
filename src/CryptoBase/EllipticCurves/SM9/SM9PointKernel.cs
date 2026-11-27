@@ -6,7 +6,6 @@ namespace CryptoBase.EllipticCurves.SM9;
 internal static class SM9PointKernel<TVector> where TVector : unmanaged, ISM9Vector<TVector>
 {
 	// k·P for P of G1, as SM9G1Group.Multiply.
-	[SkipLocalsInit]
 	internal static void MultiplyG1(in SM9AffinePoint<SM9Fp> point, in FieldElement<SM9Order> scalar, out SM9Point<SM9Fp> result)
 	{
 		Span<sbyte> digits1 = stackalloc sbyte[SM9G1Group.PointDigitCount];
@@ -45,7 +44,6 @@ internal static class SM9PointKernel<TVector> where TVector : unmanaged, ISM9Vec
 	}
 
 	// k·P for a public P of G1 and a public k, as SM9G1Group.MultiplyVariableTime: the odd multiples come from AddSingle with 2P, and each digit adds its entry, negated where it is negative.
-	[SkipLocalsInit]
 	internal static void MultiplyG1VariableTime(in SM9AffinePoint<SM9Fp> point, in FieldElement<SM9Order> scalar, out SM9Point<SM9Fp> result)
 	{
 		Span<sbyte> digits1 = stackalloc sbyte[SM9G1Group.VariableTimeBits + 1];
@@ -86,7 +84,6 @@ internal static class SM9PointKernel<TVector> where TVector : unmanaged, ISM9Vec
 
 	// [a]Q for a = 6t + 2 and Q of E'(Fp2) with reduced coordinates, by the NAF of a, SM9MillerLoop.Digits, on the formulas for one point: Q for the top digit, then a doubling for each digit below it and an addition of Q or −Q for each nonzero one, the complete formulas taking every sum.
 	// The time depends on a alone, so Q may be a private key, and the workspace and −Q are erased.
-	[SkipLocalsInit]
 	internal static void MultiplyByLoopScalarG2(in SM9Point<SM9Fp2> point, out SM9Point<SM9Fp2> result)
 	{
 		int e = SM9Lanes<TVector>.Fp2Lanes.ElementLength;
@@ -122,7 +119,6 @@ internal static class SM9PointKernel<TVector> where TVector : unmanaged, ISM9Vec
 	}
 
 	// Adds digit·P from the odd multiples for an odd digit, negated for a negative one, or nothing for 0.
-	[SkipLocalsInit]
 	private static void AddVariableTime(ref ulong sum, ReadOnlySpan<SM9Point<SM9Fp>> multiples, int digit, ref ulong entry, ref ulong work)
 	{
 		if (digit is 0)
@@ -142,7 +138,6 @@ internal static class SM9PointKernel<TVector> where TVector : unmanaged, ISM9Vec
 	}
 
 	// The tables of SM9G1Group.Multiply, 0·P to 16·P and their images under φ, each multiple from the one before by AddSingle with P.
-	[SkipLocalsInit]
 	private static void BuildTablesG1(in SM9AffinePoint<SM9Fp> point, Span<SM9Point<SM9Fp>> multiples, Span<SM9Point<SM9Fp>> images, ref ulong sum, ref ulong entry, ref ulong work)
 	{
 		SM9Curve<SM9Fp>.Infinity(out multiples[0]);
@@ -164,7 +159,6 @@ internal static class SM9PointKernel<TVector> where TVector : unmanaged, ISM9Vec
 
 	// Adds the entry of digit, negated where the digit and the sign of the part differ, as SM9G1Group.AddDigit.
 	// Every entry is read.
-	[SkipLocalsInit]
 	private static void AddDigit(ref ulong sum, ReadOnlySpan<SM9Point<SM9Fp>> table, int digit, ulong partSign, ref ulong entry, ref ulong work)
 	{
 		int sign = digit >> 31;

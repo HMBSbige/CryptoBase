@@ -61,7 +61,6 @@ public partial struct MD5Core : IHmacHashCore<MD5Core>
 	/// <inheritdoc />
 	public static int HmacBlockSize => BlockSizeInBytes;
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	static MD5Core IHashCore<MD5Core>.Create()
 	{

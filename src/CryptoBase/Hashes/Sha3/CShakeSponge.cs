@@ -46,7 +46,6 @@ internal struct CShakeSponge<TRate> where TRate : IKeccakRate
 	}
 
 	// Copies only the sponge, since the seed plays no part in the output.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal readonly void SqueezeCopy(Span<byte> destination)
 	{
@@ -56,7 +55,6 @@ internal struct CShakeSponge<TRate> where TRate : IKeccakRate
 	}
 
 	// Right-encodes value first, as KMAC does with its output length. The copy holds the key, so it is erased.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal readonly void SqueezeCopy(ulong value, Span<byte> destination)
 	{
@@ -132,7 +130,6 @@ internal struct CShakeSponge<TRate> where TRate : IKeccakRate
 	}
 
 	// encode_string of Sec. 2.3.2: the length in bits, left-encoded, then the string.
-	[SkipLocalsInit]
 	private static void AbsorbEncodedString(ref KeccakSponge<TRate> sponge, ReadOnlySpan<byte> value)
 	{
 		ulong bitLength = (ulong)value.Length * 8;

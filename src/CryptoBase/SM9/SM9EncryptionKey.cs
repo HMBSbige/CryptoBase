@@ -86,7 +86,6 @@ public sealed class SM9EncryptionKey : IDisposable
 	/// <returns><see langword="true" /> if the key was recovered; otherwise, <see langword="false" />.</returns>
 	/// <exception cref="ArgumentException"><paramref name="key" /> is empty.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	[SkipLocalsInit]
 	public bool TryDecapsulate(ReadOnlySpan<byte> encapsulation, Span<byte> key)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
@@ -126,7 +125,6 @@ public sealed class SM9EncryptionKey : IDisposable
 	/// <returns><see langword="true" /> if the ciphertext was decrypted; otherwise, <see langword="false" />.</returns>
 	/// <exception cref="ArgumentException"><paramref name="destination" /> is too short.</exception>
 	/// <exception cref="ObjectDisposedException">The instance has been disposed.</exception>
-	[SkipLocalsInit]
 	public bool TryDecrypt(ReadOnlySpan<byte> ciphertext, Span<byte> destination, out int bytesWritten)
 	{
 		ObjectDisposedException.ThrowIf(_disposed, this);
@@ -203,7 +201,6 @@ public sealed class SM9EncryptionKey : IDisposable
 
 	// The checks of ImportPrivateKey for the identifier hid: de lies in G2 and Ppub-e on the curve, and de = [ke/(h1 + ke)]P2 just if e(Q, de) = e([h1 + ke]P1, de) = e(P1, P2)^ke = e(Ppub-e, P2) = g for h1 = H1(ID ‖ hid, N) and Q = [h1]P1 + Ppub-e, which is the point at infinity only for an ID that has no key.
 	// Returns de, whose lines the first pairing built, with Ppub-e and g.
-	[SkipLocalsInit]
 	internal static SM9G2PrivateKey Import(ReadOnlySpan<byte> privateKey, ReadOnlySpan<byte> masterPublicKey, ReadOnlySpan<byte> id, byte hid, out (SM9AffinePoint<SM9Fp> PublicKey, SM9Fp12 G) master)
 	{
 		ArgumentOutOfRangeException.ThrowIfNotEqual(privateKey.Length, PrivateKeyLength, nameof(privateKey));

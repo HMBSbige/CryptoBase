@@ -13,7 +13,6 @@ internal static class KeccakP1600Interleaved
 	// Unlike the scalar round, the column parities are recomputed from the state rather than accumulated across the planes, which keeps five fewer vectors live through χ.
 	// The rotation counts are the ρ offsets of KeccakP1600Constants.RhoOffsets, written out because the rotate instructions take them as immediates.
 	// Blocks that absorb or squeeze are laid out as one state's lanes, so they only suit lane types that hold a single state.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void Permute<TVector, TLanes, TBlocks>(ref ulong state, ref ulong block, int blocks) where TVector : struct where TLanes : IKeccakP1600Lanes<TVector> where TBlocks : IKeccakP1600Blocks
 	{

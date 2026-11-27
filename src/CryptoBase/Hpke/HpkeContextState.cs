@@ -74,7 +74,6 @@ internal struct HpkeContextState
 		}
 	}
 
-	[SkipLocalsInit]
 	internal int Seal(ReadOnlySpan<byte> plaintext, Span<byte> ciphertext, ReadOnlySpan<byte> associatedData)
 	{
 		AeadCipher cipher = GetCipher();
@@ -109,7 +108,6 @@ internal struct HpkeContextState
 		return length;
 	}
 
-	[SkipLocalsInit]
 	internal bool TryOpen(ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> associatedData)
 	{
 		AeadCipher cipher = GetCipher();
@@ -146,7 +144,6 @@ internal struct HpkeContextState
 	}
 
 	// Context.Export of Section 5.3: LabeledExpand(exporter_secret, "sec", exporter_context, L).
-	[SkipLocalsInit]
 	internal readonly void Export(ReadOnlySpan<byte> exporterContext, Span<byte> destination)
 	{
 		int hashLength = Kdf.HashLength;
@@ -189,7 +186,6 @@ internal struct HpkeContextState
 		_baseNonceLow = 0;
 	}
 
-	[SkipLocalsInit]
 	private void KeySchedule<TKdf>(HpkeMode mode, ReadOnlySpan<byte> sharedSecret, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId) where TKdf : unmanaged, IHmacHashCore<TKdf>
 	{
 		int hashLength = TKdf.HashLength;

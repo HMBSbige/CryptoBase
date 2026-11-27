@@ -74,7 +74,6 @@ internal ref struct Poly1305Software : IPoly1305State<Poly1305Software>
 		Append(source, true);
 	}
 
-	[SkipLocalsInit]
 	private void Append(scoped ReadOnlySpan<byte> source, bool padPartialBlock)
 	{
 		int length = source.Length;

@@ -52,7 +52,6 @@ internal static unsafe class Argon2Core
 		}
 	}
 
-	[SkipLocalsInit]
 	internal static void DeriveKey<TKernel>(ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> secret, ReadOnlySpan<byte> associatedData, Argon2Type type, Argon2Parameters parameters, int maxDegreeOfParallelism, Span<byte> destination) where TKernel : IArgon2Kernel
 	{
 		Debug.Assert(TKernel.IsSupported);
@@ -96,7 +95,6 @@ internal static unsafe class Argon2Core
 		}
 	}
 
-	[SkipLocalsInit]
 	private static void ComputePrehash(ReadOnlySpan<byte> password, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> secret, ReadOnlySpan<byte> associatedData, Argon2Type type, Argon2Parameters parameters, int tagLength, Span<byte> prehash)
 	{
 		Span<byte> header = stackalloc byte[6 * sizeof(uint)];
@@ -125,7 +123,6 @@ internal static unsafe class Argon2Core
 		}
 	}
 
-	[SkipLocalsInit]
 	private static void AppendWithLength(ref Blake2bState blake2b, ReadOnlySpan<byte> data)
 	{
 		Span<byte> length = stackalloc byte[sizeof(uint)];
@@ -134,7 +131,6 @@ internal static unsafe class Argon2Core
 		blake2b.Append(data);
 	}
 
-	[SkipLocalsInit]
 	internal static void HashVariable(ReadOnlySpan<byte> input, Span<byte> destination)
 	{
 		Span<byte> outputLength = stackalloc byte[sizeof(uint)];

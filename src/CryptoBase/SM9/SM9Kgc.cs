@@ -16,7 +16,6 @@ internal static class SM9Kgc
 
 	// A scalar in [1, N − 1] from fill: candidates of 32 bytes until one lies in the range, which rejects 1 − (N − 1)/2^256, about 29%, of them; only that retry branches.
 	// If fill throws, nothing is left behind.
-	[SkipLocalsInit]
 	internal static void GenerateScalar(Action<Span<byte>> fill, out FieldElement<SM9Order> result)
 	{
 		using CryptoBuffer<byte> candidate = new(stackalloc byte[PrivateKeyLength]);
@@ -30,7 +29,6 @@ internal static class SM9Kgc
 
 	// t2 = k·t1⁻¹ for t1 = H1(ID ‖ hid, N) + k mod N, the scalar of the private key [t2]P1 or [t2]P2 of a user, for the master private key k.
 	// GM/T 0044 has the KGC generate a new master key if t1 = 0, which this throws for; only that branches on k.
-	[SkipLocalsInit]
 	internal static void ExtractScalar(in FieldElement<SM9Order> masterKey, ReadOnlySpan<byte> id, byte hid, out FieldElement<SM9Order> result)
 	{
 		SM9Hash.H1(id, hid, out FieldElement<SM9Order> t1);

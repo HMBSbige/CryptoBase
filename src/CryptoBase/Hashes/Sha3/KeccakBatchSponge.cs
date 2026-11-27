@@ -41,7 +41,6 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 	// The prefix takes rows 0 to 3, or 0 to 7 when it is 64 bytes long, and the next row each suffix with the domain separator.
 	// The free lanes are filled too, which is harmless: only ExtractLane and CopyStreams read the state back, and both stop at Count, and a guest overwrites its lane.
 	// The permutation is left to Squeeze, or to Permute to share.
-	[SkipLocalsInit]
 	internal void Reset(int streams, int lanes, ReadOnlySpan<byte> prefix, ReadOnlySpan<ushort> suffixes, int suffixLength, byte domainSeparator)
 	{
 		Debug.Assert(prefix.Length is ShortPrefixLength or LongPrefixLength);
@@ -57,7 +56,6 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 	}
 
 	// Inlined into each branch above, so that suffixRowIndex is a constant.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void Reset(int streams, int lanes, ReadOnlySpan<byte> prefix, ReadOnlySpan<ushort> suffixes, int suffixLength, byte domainSeparator, int suffixRowIndex)
 	{
@@ -138,7 +136,6 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 	}
 
 	// Squeezes length bytes of every stream into its part of outputs from offset on, so that each permutation can go through Permute.
-	[SkipLocalsInit]
 	internal void Squeeze(Span<byte> outputs, int offset, int length)
 	{
 		Debug.Assert(IsSqueezing);
@@ -161,7 +158,6 @@ internal struct KeccakBatchSponge<TRate> where TRate : IKeccakRate
 		_position = position + end - offset;
 	}
 
-	[SkipLocalsInit]
 	internal readonly KeccakSponge<TRate> ExtractLane(int lane)
 	{
 		Debug.Assert((uint)lane < (uint)Count);

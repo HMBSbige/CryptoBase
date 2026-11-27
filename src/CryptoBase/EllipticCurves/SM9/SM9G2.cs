@@ -11,7 +11,6 @@ internal static class SM9G2
 
 	// The form must be 04 ‖ x ‖ y with every coefficient below p, and the point on the twist and in G2, which E'(Fp2) does not fill.
 	// The checks branch on whether the encoding is valid alone, so the input may be a private key, whose coordinates in plain form are erased.
-	[SkipLocalsInit]
 	internal static bool TryDecode(ReadOnlySpan<byte> source, out SM9AffinePoint<SM9Fp2> result)
 	{
 		if (source.Length != EncodedLength || source[0] is not 0x04)

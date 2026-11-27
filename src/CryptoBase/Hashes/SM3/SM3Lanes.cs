@@ -31,7 +31,6 @@ internal static class SM3Lanes<TLanes, TVector> where TLanes : ISM3Lanes<TVector
 	// Every lane of the last groups is computed, but only the blocks within destination are written.
 	// The words of the prefix that the method copies are erased.
 	// Inlined where it is hot, it would leave the JIT no budget for its own steps, so it stays a call.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	internal static void Write(ref readonly SM3CounterBlocks blocks, uint counter, Span<byte> destination)
 	{

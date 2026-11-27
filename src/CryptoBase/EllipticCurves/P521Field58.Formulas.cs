@@ -14,7 +14,6 @@ internal partial struct P521Field58
 	// α² − 4β − 4β is of size 5, 4β − X3 of 3 and α(4β − X3) − 4γ² − 4γ² of 5.
 	// Z3 = 2Y·Z takes sizes 2 and 1.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-	[SkipLocalsInit]
 	public static void Double(in JacobianPoint<P521Field58> value, out JacobianPoint<P521Field58> result)
 	{
 		Square(in value.Y, out P521Field58 gamma);
@@ -50,7 +49,6 @@ internal partial struct P521Field58
 	// ECFormulas.Combine takes R, J, V and SJ of E.
 	// There R² − J − 2V is of size 7, V − X3 of 3 and R(V − X3) − 2·SJ of 5.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-	[SkipLocalsInit]
 	public static ulong AddDistinct(in JacobianPoint<P521Field58> left, in JacobianPoint<P521Field58> right, out JacobianPoint<P521Field58> result)
 	{
 		Square(in left.Z, out P521Field58 z1z1);
@@ -81,7 +79,6 @@ internal partial struct P521Field58
 	// As above, with an affine right, whose coordinates are of E as well.
 	// H = X2·Z1² − X1 and R = 2(Y2·Z1³ − Y1) have the sizes above, Z3 = Z1·2H takes sizes 1 and 2, and V = X1·I and Y1·J take E.
 	[MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.AggressiveOptimization)]
-	[SkipLocalsInit]
 	public static ulong AddDistinct(in JacobianPoint<P521Field58> left, in AffinePoint<P521Field58> right, out JacobianPoint<P521Field58> result)
 	{
 		Square(in left.Z, out P521Field58 zz);

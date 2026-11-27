@@ -404,7 +404,6 @@ internal readonly partial struct MLDsaVector128 : IMLDsaKernel
 
 	// Four candidates from 12 bytes; a shuffle moves the accepted ones to the front of a buffer that takes whole vectors.
 	// The bytes are public, so the shuffle may depend on them.
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static int RejectSample(ReadOnlySpan<byte> source, Span<int> destination)
 	{

@@ -59,7 +59,6 @@ internal static class SafeGcd<TModulus> where TModulus : struct, IMontgomeryModu
 	// As above, but giving numerator/value mod m in place of R²/value, for a numerator below m.
 	// Not inlined, nor is Load: inlining either spends the inlining budget before the helpers of the matrix updates, which then become calls in every batch.
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
 	internal static void Invert(in FieldElement<TModulus> value, ReadOnlySpan<ulong> numerator, out FieldElement<TModulus> result)
 	{
 		Load(in value, numerator, out State state);
@@ -87,7 +86,6 @@ internal static class SafeGcd<TModulus> where TModulus : struct, IMontgomeryModu
 	// As above, but giving numerator/value mod m in place of R²/value, for a numerator below m.
 	// Not inlined, for the reason given at Invert.
 	[MethodImpl(MethodImplOptions.NoInlining)]
-	[SkipLocalsInit]
 	internal static void InvertVariableTime(in FieldElement<TModulus> value, ReadOnlySpan<ulong> numerator, out FieldElement<TModulus> result)
 	{
 		Load(in value, numerator, out State state);

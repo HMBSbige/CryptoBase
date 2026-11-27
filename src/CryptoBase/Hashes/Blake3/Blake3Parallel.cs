@@ -27,7 +27,6 @@ internal static unsafe class Blake3Parallel
 
 	// A head, a subtree of several chunks that ends where the input starts, is hashed by the calling thread while pool threads start, writing its children to headOutput.
 	// Returns false, having hashed nothing, when no second thread would take part: the serial path then hashes faster, keeping its rows wide up to the top of the tree.
-	[SkipLocalsInit]
 	internal static bool TryCompressSubtrees(ReadOnlySpan<byte> input, ReadOnlySpan<int> boundaries, ref readonly InlineArray8<uint> key, ulong chunkCounter, uint flags, Span<byte> output, int maxDegreeOfParallelism, ThreadPoolHelperBudget budget, ReadOnlySpan<byte> head = default, Span<byte> headOutput = default)
 	{
 		int subtrees = boundaries.Length - 1;
@@ -211,7 +210,6 @@ internal static unsafe class Blake3Parallel
 			HashNode(leaf.Start, leaf.Length, leaf.IsWholeSubtree, destination);
 		}
 
-		[SkipLocalsInit]
 		private void HashNode(int start, int length, bool keepChildren, byte* destination)
 		{
 			ReadOnlySpan<byte> input = new(_input + start, length);

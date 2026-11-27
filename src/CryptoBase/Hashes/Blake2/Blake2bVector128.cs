@@ -35,7 +35,6 @@ internal readonly partial struct Blake2bVector128 : IBlake2bKernel
 		5, 1, 0, 11, 3, 12, 2, 7,
 	];
 
-	[SkipLocalsInit]
 	[MethodImpl(MethodImplOptions.NoInlining)]
 	public static void Compress(ref ulong state, ReadOnlySpan<byte> blocks, UInt128 counter, ulong finalFlag)
 	{

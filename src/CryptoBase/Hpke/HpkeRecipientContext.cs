@@ -237,7 +237,6 @@ public sealed class HpkeRecipientContext : IDisposable
 		_disposed = true;
 	}
 
-	[SkipLocalsInit]
 	private static bool TryDecapsulate<TKem>(TKem recipient, HpkeMode mode, HpkeKdfId kdf, HpkeAeadId aead, ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId, [NotNullWhen(true)] out HpkeRecipientContext? context) where TKem : class, IHpkeKem<TKem>
 	{
 		int length = TKem.SharedSecretLength;
@@ -246,7 +245,6 @@ public sealed class HpkeRecipientContext : IDisposable
 		return context is not null;
 	}
 
-	[SkipLocalsInit]
 	private static bool TryAuthDecapsulate<TKem>(TKem recipient, TKem sender, HpkeMode mode, HpkeKdfId kdf, HpkeAeadId aead, ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId, [NotNullWhen(true)] out HpkeRecipientContext? context) where TKem : class, IHpkeAuthKem<TKem>
 	{
 		int length = TKem.SharedSecretLength;

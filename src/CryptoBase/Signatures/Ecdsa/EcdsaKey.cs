@@ -115,7 +115,6 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 		return _key.ExportPublicKey(destination);
 	}
 
-	[SkipLocalsInit]
 	internal readonly int ExportSubjectPublicKeyInfo(ReadOnlySpan<byte> algorithmIdentifier, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, GetSubjectPublicKeyInfoLength(algorithmIdentifier), nameof(destination));
@@ -125,7 +124,6 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 		return KeyInfoDer.WriteSubjectPublicKeyInfo(algorithmIdentifier, publicKey, destination);
 	}
 
-	[SkipLocalsInit]
 	internal readonly int ExportPkcs8PrivateKey(ReadOnlySpan<byte> algorithmIdentifier, Span<byte> destination)
 	{
 		ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, GetPkcs8PrivateKeyLength(algorithmIdentifier), nameof(destination));
@@ -178,7 +176,6 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 		return EcdsaEncoding<TOrder>.MaxDerLength;
 	}
 
-	[SkipLocalsInit]
 	internal readonly int Sign(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, Span<byte> destination)
 	{
 		ThrowIfCannotSign(algorithm, destination);
@@ -200,7 +197,6 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 		return SignHashCore(algorithm, hash, additionalData, destination);
 	}
 
-	[SkipLocalsInit]
 	internal bool Verify(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
 	{
 		ThrowIfUnsupported(algorithm);
@@ -318,7 +314,6 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 		return publicKey.IsEmpty || MatchesPublicKey(publicKey);
 	}
 
-	[SkipLocalsInit]
 	private readonly bool MatchesPublicKey(ReadOnlySpan<byte> publicKey)
 	{
 		Span<byte> encoding = stackalloc byte[PublicKeyLength];
@@ -327,7 +322,6 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 	}
 
 	// The algorithm is supported.
-	[SkipLocalsInit]
 	private readonly int SignMessage(SignatureAlgorithm algorithm, ReadOnlySpan<byte> message, ReadOnlySpan<byte> additionalData, Span<byte> destination)
 	{
 		Span<byte> hash = stackalloc byte[Sha512Core.HashSizeInBytes];
@@ -346,7 +340,6 @@ internal struct EcdsaKey<TCurve, TField, TOrder>
 		};
 	}
 
-	[SkipLocalsInit]
 	private readonly int SignHash<THash>(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> additionalData, Span<byte> destination)
 		where THash : unmanaged, IHmacHashCore<THash>
 	{

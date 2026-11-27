@@ -21,7 +21,6 @@ internal static class SM3KeyConfirmation
 	}
 
 	// SM3(tag ‖ part ‖ inner), Hv in SM9.
-	[SkipLocalsInit]
 	internal static void Compute(byte tag, ReadOnlySpan<byte> part, ReadOnlySpan<byte> inner, Span<byte> destination)
 	{
 		SM3Core hash = HashCore.Create<SM3Core>();

@@ -10,7 +10,6 @@ internal struct Blake3Output
 	internal uint UsedBlockLength;
 	internal uint Flags;
 
-	[SkipLocalsInit]
 	internal static void FromChunk(ReadOnlySpan<byte> blocks, ref readonly InlineArray8<uint> cv, uint startFlag, ulong chunkCounter, uint flags, out Blake3Output output)
 	{
 		Debug.Assert(blocks.Length <= ChunkLength);
@@ -60,7 +59,6 @@ internal struct Blake3Output
 		Flags = flags | Blake3Flags.Parent;
 	}
 
-	[SkipLocalsInit]
 	internal readonly void RootBytes(ulong position, Span<byte> destination, int maxDegreeOfParallelism, ThreadPoolHelperBudget budget)
 	{
 		uint flags = Flags | Blake3Flags.Root;

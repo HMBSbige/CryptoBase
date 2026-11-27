@@ -51,7 +51,6 @@ internal struct ECKey<TCurve, TField, TOrder>
 	}
 
 	// If fill throws, the key stays as it was.
-	[SkipLocalsInit]
 	internal void GenerateKey(Action<Span<byte>> fill)
 	{
 		Unsafe.SkipInit(out FieldElement<TOrder> privateKey);
@@ -69,7 +68,6 @@ internal struct ECKey<TCurve, TField, TOrder>
 
 	// Sets result to a d in [1, n − 1] drawn from fill.
 	// Only the retry after a candidate outside that range branches.
-	[SkipLocalsInit]
 	internal static void GeneratePrivateScalar(Action<Span<byte>> fill, out FieldElement<TOrder> result)
 	{
 		using CryptoBuffer<byte> buffer = new(stackalloc byte[PrivateKeyLength]);
