@@ -7,6 +7,7 @@ internal readonly unsafe struct MontgomeryPairKernelAvx512<TWindow> : IMontgomer
 {
 	private const int R = 52;
 	private const int S = 64 - R;
+	private const ulong DigitMask = (1UL << R) - 1;
 
 	// The rows of scratch: b as doubles, then the parts of lanes 0 to 3 that come from b.
 	private const int Rows = 5;
@@ -95,10 +96,11 @@ internal readonly unsafe struct MontgomeryPairKernelAvx512<TWindow> : IMontgomer
 				Vector128<ulong> lane3 = Avx512F.ExtractVector128(TWindow.First(in acc) - next, 3);
 				TWindow.Shift(ref acc, next);
 				next += step;
-				s0 = s1 + Unsafe.Add(ref rows, 2 * row + i) + Bmi2.X64.MultiplyNoFlags(m, p0) + (m * p1 >> S) + (u + (m * p0 >> S) >> R);
+				// (m >> S) * p0 is -u modulo 2^R, so the carry is ceil(u / 2^R). The same holds for k and v.
+				s0 = s1 + Unsafe.Add(ref rows, 2 * row + i) + Bmi2.X64.MultiplyNoFlags(m, p0) + (m * p1 >> S) + (u + DigitMask >> R);
 				s1 = s2 + Unsafe.Add(ref rows, 3 * row + i) + Bmi2.X64.MultiplyNoFlags(m, p1) + (m * p2 >> S);
 				s2 = lane3.ToScalar() + Unsafe.Add(ref rows, 4 * row + i) + Bmi2.X64.MultiplyNoFlags(m, p2);
-				r0 = r1 + Unsafe.Add(ref rows, 2 * row + i + 1) + Bmi2.X64.MultiplyNoFlags(k, q0) + (k * q1 >> S) + (v + (k * q0 >> S) >> R);
+				r0 = r1 + Unsafe.Add(ref rows, 2 * row + i + 1) + Bmi2.X64.MultiplyNoFlags(k, q0) + (k * q1 >> S) + (v + DigitMask >> R);
 				r1 = r2 + Unsafe.Add(ref rows, 3 * row + i + 1) + Bmi2.X64.MultiplyNoFlags(k, q1) + (k * q2 >> S);
 				r2 = lane3.GetElement(1) + Unsafe.Add(ref rows, 4 * row + i + 1) + Bmi2.X64.MultiplyNoFlags(k, q2);
 			}
