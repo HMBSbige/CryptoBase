@@ -234,12 +234,11 @@ public sealed partial class Base32Encoding
 	{
 		sourceOffset = 0;
 		destinationOffset = 0;
+		int simdConsumed = 0;
 
 		if (path is not Base32SimdPath.Auto)
 		{
-			int simdConsumed = EncodeForced(source, destination, _alphabet, _alphabetKind, path);
-			sourceOffset += simdConsumed;
-			destinationOffset += simdConsumed / InputBytesPerBlock * OutputSymbolsPerBlock;
+			simdConsumed = EncodeForced(source, destination, _alphabet, _alphabetKind, path);
 		}
 		else if
 		(
@@ -248,11 +247,9 @@ public sealed partial class Base32Encoding
 			&& (_alphabetKind is not CustomAlphabetKind || AdvSimd.IsSupported)
 		)
 		{
-			int simdConsumed = AdvSimd.IsSupported
+			simdConsumed = AdvSimd.IsSupported
 				? EncodeAdvSimdAuto(source, destination, sourceOffset, destinationOffset, _alphabet)
 				: EncodeX86Auto(source, destination, _alphabetKind);
-			sourceOffset += simdConsumed;
-			destinationOffset += simdConsumed / InputBytesPerBlock * OutputSymbolsPerBlock;
 		}
 		else if
 		(
@@ -261,22 +258,28 @@ public sealed partial class Base32Encoding
 			&& Avx2.IsSupported
 		)
 		{
-			int simdConsumed = EncodeCustomAuto(source, destination);
-			sourceOffset += simdConsumed;
-			destinationOffset += simdConsumed / InputBytesPerBlock * OutputSymbolsPerBlock;
+			simdConsumed = EncodeCustomAuto(source, destination);
 		}
 		else if (source.Length >= X86EncodeVbmiVl128Threshold && destination.Length >= 16 && Avx512Vbmi.VL.IsSupported)
 		{
 			// Built-in and custom alphabets share one inlined copy: every instance keeps its alphabet in _alphabet.
-			sourceOffset = EncodeAvx512VbmiVl128Short(source, destination, Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet)));
-			destinationOffset = sourceOffset / InputBytesPerBlock * OutputSymbolsPerBlock;
+			simdConsumed = EncodeAvx512VbmiVl128Short(source, destination, Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet)));
 		}
 
-		int availableBlocks = (source.Length - sourceOffset) / InputBytesPerBlock;
-		int writableBlocks = (destination.Length - destinationOffset) / OutputSymbolsPerBlock;
+		if (simdConsumed is not 0)
+		{
+			// The SIMD encoders cover every whole block that fits in both spans.
+			sourceOffset = simdConsumed;
+			destinationOffset = simdConsumed / InputBytesPerBlock * OutputSymbolsPerBlock;
+			Debug.Assert(Math.Min((source.Length - sourceOffset) / InputBytesPerBlock, (destination.Length - destinationOffset) / OutputSymbolsPerBlock) is 0);
+			return source.Length - simdConsumed < InputBytesPerBlock;
+		}
+
+		int availableBlocks = source.Length / InputBytesPerBlock;
+		int writableBlocks = destination.Length / OutputSymbolsPerBlock;
 		int blockCount = Math.Min(availableBlocks, writableBlocks);
-		ref byte sourceReference = ref Unsafe.Add(ref MemoryMarshal.GetReference(source), sourceOffset);
-		ref char destinationReference = ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), destinationOffset);
+		ref byte sourceReference = ref MemoryMarshal.GetReference(source);
+		ref char destinationReference = ref MemoryMarshal.GetReference(destination);
 		ref byte alphabetReference = ref MemoryMarshal.GetArrayDataReference(_alphabet);
 
 		for (int block = 0; block < blockCount; ++block)
@@ -286,8 +289,8 @@ public sealed partial class Base32Encoding
 			destinationReference = ref Unsafe.Add(ref destinationReference, OutputSymbolsPerBlock);
 		}
 
-		sourceOffset += blockCount * InputBytesPerBlock;
-		destinationOffset += blockCount * OutputSymbolsPerBlock;
+		sourceOffset = blockCount * InputBytesPerBlock;
+		destinationOffset = blockCount * OutputSymbolsPerBlock;
 
 		return blockCount >= availableBlocks;
 	}
@@ -336,18 +339,24 @@ public sealed partial class Base32Encoding
 			simdConsumed = EncodeAvx512VbmiVl128Short(source, destination, Vector256.LoadUnsafe(ref MemoryMarshal.GetArrayDataReference(_alphabet)));
 		}
 
-		sourceOffset += simdConsumed;
-		destinationOffset += simdConsumed / InputBytesPerBlock * OutputSymbolsPerBlock;
-		int availableBlocks = (source.Length - sourceOffset) / InputBytesPerBlock;
-		int writableBlocks = (destination.Length - destinationOffset) / OutputSymbolsPerBlock;
+		if (simdConsumed is not 0)
+		{
+			// The SIMD encoders cover every whole block that fits in both spans.
+			sourceOffset = simdConsumed;
+			destinationOffset = simdConsumed / InputBytesPerBlock * OutputSymbolsPerBlock;
+			Debug.Assert(Math.Min((source.Length - sourceOffset) / InputBytesPerBlock, (destination.Length - destinationOffset) / OutputSymbolsPerBlock) is 0);
+			return source.Length - simdConsumed < InputBytesPerBlock;
+		}
+
+		int availableBlocks = source.Length / InputBytesPerBlock;
+		int writableBlocks = destination.Length / OutputSymbolsPerBlock;
 		int blockCount = Math.Min(availableBlocks, writableBlocks);
-		ref byte sourceReference = ref Unsafe.Add(ref MemoryMarshal.GetReference(source), sourceOffset);
-		ref byte destinationReference = ref Unsafe.Add(ref MemoryMarshal.GetReference(destination), destinationOffset);
+		ref byte sourceReference = ref MemoryMarshal.GetReference(source);
+		ref byte destinationReference = ref MemoryMarshal.GetReference(destination);
 		ref byte alphabetReference = ref MemoryMarshal.GetArrayDataReference(_alphabet);
-		int sourceRemaining = source.Length - sourceOffset;
 		int octCount = blockCount >> 3;
 
-		if (octCount is not 0 && sourceRemaining - octCount * 40 < Pack5FastOverReadBytes)
+		if (octCount is not 0 && source.Length - octCount * 40 < Pack5FastOverReadBytes)
 		{
 			--octCount;
 		}
@@ -366,8 +375,8 @@ public sealed partial class Base32Encoding
 			destinationReference = ref Unsafe.Add(ref destinationReference, OutputSymbolsPerBlock);
 		}
 
-		sourceOffset += blockCount * InputBytesPerBlock;
-		destinationOffset += blockCount * OutputSymbolsPerBlock;
+		sourceOffset = blockCount * InputBytesPerBlock;
+		destinationOffset = blockCount * OutputSymbolsPerBlock;
 
 		return blockCount >= availableBlocks;
 	}

@@ -81,6 +81,16 @@ public sealed partial class Base32Encoding
 		nuint sourceOffset = 0;
 		nuint destinationOffset = 0;
 
+		// Leave one or two vectors for the loop that also handles the overlapping final group.
+		while (typeof(T) == typeof(byte) && vectorCount > 2)
+		{
+			StoreSymbols(EncodeFour(ref Unsafe.Add(ref sourceReference, sourceOffset), indices, threshold, first, second), ref Unsafe.Add(ref destinationReference, destinationOffset));
+			StoreSymbols(EncodeFour(ref Unsafe.Add(ref sourceReference, sourceOffset + 20), indices, threshold, first, second), ref Unsafe.Add(ref destinationReference, destinationOffset + 32));
+			sourceOffset += 40;
+			destinationOffset += 64;
+			vectorCount -= 2;
+		}
+
 		while (true)
 		{
 			do
